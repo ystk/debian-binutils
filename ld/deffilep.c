@@ -91,8 +91,9 @@
      NONAMEU = 280,
      NONAMEL = 281,
      DIRECTIVE = 282,
-     ID = 283,
-     DIGITS = 284
+     EQUAL = 283,
+     ID = 284,
+     DIGITS = 285
    };
 #endif
 /* Tokens.  */
@@ -121,8 +122,9 @@
 #define NONAMEU 280
 #define NONAMEL 281
 #define DIRECTIVE 282
-#define ID 283
-#define DIGITS 284
+#define EQUAL 283
+#define ID 284
+#define DIGITS 285
 
 
 
@@ -209,11 +211,22 @@
 #define yytable	 def_yytable
 #define yycheck	 def_yycheck
 
+typedef struct def_pool_str {
+  struct def_pool_str *next;
+  char data[1];
+} def_pool_str;
+
+static def_pool_str *pool_strs = NULL;
+
+static char *def_pool_alloc (size_t sz);
+static char *def_pool_strdup (const char *str);
+static void def_pool_free (void);
+
 static void def_description (const char *);
-static void def_exports (const char *, const char *, int, int);
+static void def_exports (const char *, const char *, int, int, const char *);
 static void def_heapsize (int, int);
 static void def_import (const char *, const char *, const char *, const char *,
-			int);
+			int, const char *);
 static void def_image_name (const char *, int, int);
 static void def_section (const char *, int);
 static void def_section_alt (const char *, const char *);
@@ -251,14 +264,14 @@ static const char *lex_parse_string_end = 0;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 103 "deffilep.y"
+#line 114 "deffilep.y"
 {
   char *id;
   int number;
   char *digits;
 }
 /* Line 193 of yacc.c.  */
-#line 262 "deffilep.c"
+#line 275 "deffilep.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -271,7 +284,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 275 "deffilep.c"
+#line 288 "deffilep.c"
 
 #ifdef short
 # undef short
@@ -484,22 +497,22 @@ union yyalloc
 #endif
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  44
+#define YYFINAL  47
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   107
+#define YYLAST   126
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  34
+#define YYNTOKENS  35
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  24
+#define YYNNTS  25
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  71
+#define YYNRULES  76
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  107
+#define YYNSTATES  123
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   284
+#define YYMAXUTOK   285
 
 #define YYTRANSLATE(YYX)						\
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -511,9 +524,9 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,    31,     2,    30,     2,     2,     2,
+       2,     2,     2,     2,    32,     2,    31,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    32,     2,     2,    33,     2,     2,     2,     2,     2,
+       2,    33,     2,     2,    34,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -535,7 +548,7 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29
+      25,    26,    27,    28,    29,    30
 };
 
 #if YYDEBUG
@@ -545,51 +558,53 @@ static const yytype_uint8 yyprhs[] =
 {
        0,     0,     3,     6,     8,    12,    16,    19,    23,    27,
       30,    33,    36,    39,    42,    45,    50,    53,    58,    59,
-      61,    64,    70,    74,    75,    77,    79,    81,    83,    85,
-      87,    89,    91,    94,    96,   104,   112,   118,   124,   130,
-     134,   137,   139,   142,   145,   149,   151,   153,   154,   157,
-     158,   160,   162,   164,   166,   168,   172,   173,   176,   177,
-     180,   181,   185,   186,   188,   192,   194,   199,   201,   202,
-     204,   205
+      61,    64,    72,    76,    77,    79,    81,    83,    85,    87,
+      89,    91,    93,    96,    98,   107,   116,   123,   130,   137,
+     142,   145,   147,   150,   153,   157,   159,   161,   162,   165,
+     166,   168,   170,   172,   174,   176,   179,   183,   184,   187,
+     188,   191,   192,   195,   196,   200,   201,   203,   206,   210,
+     212,   215,   220,   222,   223,   225,   226
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      35,     0,    -1,    35,    36,    -1,    36,    -1,     3,    49,
-      52,    -1,     4,    49,    52,    -1,     5,    28,    -1,     6,
-      57,    47,    -1,     7,    57,    47,    -1,     8,    45,    -1,
-       9,    45,    -1,    11,    43,    -1,    12,    37,    -1,    13,
-      41,    -1,    14,    57,    -1,    14,    57,    30,    57,    -1,
-      27,    28,    -1,    20,    54,    31,    57,    -1,    -1,    38,
-      -1,    37,    38,    -1,    53,    51,    50,    46,    39,    -1,
-      40,    46,    39,    -1,    -1,    25,    -1,    26,    -1,    16,
-      -1,    17,    -1,     9,    -1,    10,    -1,    18,    -1,    19,
-      -1,    41,    42,    -1,    42,    -1,    28,    32,    28,    30,
-      28,    30,    28,    -1,    28,    32,    28,    30,    28,    30,
-      57,    -1,    28,    32,    28,    30,    28,    -1,    28,    32,
-      28,    30,    57,    -1,    28,    30,    28,    30,    28,    -1,
-      28,    30,    28,    -1,    43,    44,    -1,    44,    -1,    28,
-      45,    -1,    28,    28,    -1,    45,    46,    48,    -1,    48,
-      -1,    31,    -1,    -1,    31,    57,    -1,    -1,    21,    -1,
-      22,    -1,    23,    -1,    24,    -1,    28,    -1,    28,    30,
-      28,    -1,    -1,    33,    57,    -1,    -1,    32,    53,    -1,
-      -1,    15,    32,    57,    -1,    -1,    28,    -1,    53,    30,
-      28,    -1,    28,    -1,    54,    30,    55,    56,    -1,    29,
-      -1,    -1,    28,    -1,    -1,    29,    -1
+      36,     0,    -1,    36,    37,    -1,    37,    -1,     3,    50,
+      54,    -1,     4,    50,    54,    -1,     5,    29,    -1,     6,
+      59,    48,    -1,     7,    59,    48,    -1,     8,    46,    -1,
+       9,    46,    -1,    11,    44,    -1,    12,    38,    -1,    13,
+      42,    -1,    14,    59,    -1,    14,    59,    31,    59,    -1,
+      27,    29,    -1,    20,    56,    32,    59,    -1,    -1,    39,
+      -1,    38,    39,    -1,    55,    53,    52,    47,    40,    47,
+      51,    -1,    41,    47,    40,    -1,    -1,    25,    -1,    26,
+      -1,    16,    -1,    17,    -1,     9,    -1,    10,    -1,    18,
+      -1,    19,    -1,    42,    43,    -1,    43,    -1,    29,    33,
+      29,    31,    29,    31,    29,    51,    -1,    29,    33,    29,
+      31,    29,    31,    59,    51,    -1,    29,    33,    29,    31,
+      29,    51,    -1,    29,    33,    29,    31,    59,    51,    -1,
+      29,    31,    29,    31,    29,    51,    -1,    29,    31,    29,
+      51,    -1,    44,    45,    -1,    45,    -1,    29,    46,    -1,
+      29,    29,    -1,    46,    47,    49,    -1,    49,    -1,    32,
+      -1,    -1,    32,    59,    -1,    -1,    21,    -1,    22,    -1,
+      23,    -1,    24,    -1,    29,    -1,    31,    29,    -1,    29,
+      31,    29,    -1,    -1,    28,    29,    -1,    -1,    34,    59,
+      -1,    -1,    33,    55,    -1,    -1,    15,    33,    59,    -1,
+      -1,    29,    -1,    31,    29,    -1,    55,    31,    29,    -1,
+      29,    -1,    31,    29,    -1,    56,    31,    57,    58,    -1,
+      30,    -1,    -1,    29,    -1,    -1,    30,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   123,   123,   124,   128,   129,   130,   131,   132,   133,
-     134,   135,   136,   137,   138,   139,   140,   141,   145,   147,
-     148,   155,   162,   163,   166,   167,   168,   169,   170,   171,
-     172,   173,   176,   177,   181,   182,   183,   184,   185,   186,
-     190,   191,   195,   196,   200,   201,   205,   206,   208,   209,
-     213,   214,   215,   216,   219,   220,   226,   230,   231,   235,
-     236,   239,   240,   243,   244,   252,   253,   261,   262,   265,
-     266,   269
+       0,   135,   135,   136,   140,   141,   142,   143,   144,   145,
+     146,   147,   148,   149,   150,   151,   152,   153,   157,   159,
+     160,   167,   174,   175,   178,   179,   180,   181,   182,   183,
+     184,   185,   188,   189,   193,   195,   197,   199,   201,   203,
+     208,   209,   213,   214,   218,   219,   223,   224,   226,   227,
+     231,   232,   233,   234,   237,   238,   244,   250,   253,   254,
+     258,   259,   263,   264,   267,   268,   271,   272,   278,   286,
+     287,   293,   301,   302,   305,   306,   309
 };
 #endif
 
@@ -602,12 +617,12 @@ static const char *const yytname[] =
   "STACKSIZE_K", "HEAPSIZE", "CODE", "DATAU", "DATAL", "SECTIONS",
   "EXPORTS", "IMPORTS", "VERSIONK", "BASE", "CONSTANTU", "CONSTANTL",
   "PRIVATEU", "PRIVATEL", "ALIGNCOMM", "READ", "WRITE", "EXECUTE",
-  "SHARED", "NONAMEU", "NONAMEL", "DIRECTIVE", "ID", "DIGITS", "'.'",
-  "','", "'='", "'@'", "$accept", "start", "command", "explist", "expline",
-  "exp_opt_list", "exp_opt", "implist", "impline", "seclist", "secline",
-  "attr_list", "opt_comma", "opt_number", "attr", "opt_name",
-  "opt_ordinal", "opt_equal_name", "opt_base", "dot_name", "anylang_id",
-  "opt_digits", "opt_id", "NUMBER", 0
+  "SHARED", "NONAMEU", "NONAMEL", "DIRECTIVE", "EQUAL", "ID", "DIGITS",
+  "'.'", "','", "'='", "'@'", "$accept", "start", "command", "explist",
+  "expline", "exp_opt_list", "exp_opt", "implist", "impline", "seclist",
+  "secline", "attr_list", "opt_comma", "opt_number", "attr", "opt_name",
+  "opt_equalequal_name", "opt_ordinal", "opt_equal_name", "opt_base",
+  "dot_name", "anylang_id", "opt_digits", "opt_id", "NUMBER", 0
 };
 #endif
 
@@ -619,21 +634,21 @@ static const yytype_uint16 yytoknum[] =
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
      275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
-      46,    44,    61,    64
+     285,    46,    44,    61,    64
 };
 # endif
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    34,    35,    35,    36,    36,    36,    36,    36,    36,
-      36,    36,    36,    36,    36,    36,    36,    36,    37,    37,
-      37,    38,    39,    39,    40,    40,    40,    40,    40,    40,
-      40,    40,    41,    41,    42,    42,    42,    42,    42,    42,
-      43,    43,    44,    44,    45,    45,    46,    46,    47,    47,
-      48,    48,    48,    48,    49,    49,    49,    50,    50,    51,
-      51,    52,    52,    53,    53,    54,    54,    55,    55,    56,
-      56,    57
+       0,    35,    36,    36,    37,    37,    37,    37,    37,    37,
+      37,    37,    37,    37,    37,    37,    37,    37,    38,    38,
+      38,    39,    40,    40,    41,    41,    41,    41,    41,    41,
+      41,    41,    42,    42,    43,    43,    43,    43,    43,    43,
+      44,    44,    45,    45,    46,    46,    47,    47,    48,    48,
+      49,    49,    49,    49,    50,    50,    50,    50,    51,    51,
+      52,    52,    53,    53,    54,    54,    55,    55,    55,    56,
+      56,    56,    57,    57,    58,    58,    59
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
@@ -641,12 +656,12 @@ static const yytype_uint8 yyr2[] =
 {
        0,     2,     2,     1,     3,     3,     2,     3,     3,     2,
        2,     2,     2,     2,     2,     4,     2,     4,     0,     1,
-       2,     5,     3,     0,     1,     1,     1,     1,     1,     1,
-       1,     1,     2,     1,     7,     7,     5,     5,     5,     3,
+       2,     7,     3,     0,     1,     1,     1,     1,     1,     1,
+       1,     1,     2,     1,     8,     8,     6,     6,     6,     4,
        2,     1,     2,     2,     3,     1,     1,     0,     2,     0,
-       1,     1,     1,     1,     1,     3,     0,     2,     0,     2,
-       0,     3,     0,     1,     3,     1,     4,     1,     0,     1,
-       0,     1
+       1,     1,     1,     1,     1,     2,     3,     0,     2,     0,
+       2,     0,     2,     0,     3,     0,     1,     2,     3,     1,
+       2,     4,     1,     0,     1,     0,     1
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -654,51 +669,55 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,    56,    56,     0,     0,     0,     0,     0,     0,    18,
-       0,     0,     0,     0,     0,     3,    54,    62,    62,     6,
-      71,    49,    49,    50,    51,    52,    53,     9,    45,    10,
-       0,    11,    41,    63,    12,    19,    60,     0,    13,    33,
-      14,    65,     0,    16,     1,     2,     0,     0,     4,     5,
-       0,     7,     8,    46,     0,    43,    42,    40,    20,     0,
-       0,    58,     0,     0,    32,     0,    68,     0,    55,     0,
-      48,    44,    64,    59,     0,    47,    39,     0,    15,    67,
-      70,    17,    61,    57,    23,     0,     0,    69,    66,    28,
-      29,    26,    27,    30,    31,    24,    25,    21,    47,    38,
-      36,    37,    23,     0,    22,    34,    35
+       0,    57,    57,     0,     0,     0,     0,     0,     0,    18,
+       0,     0,     0,     0,     0,     3,    54,     0,    65,    65,
+       6,    76,    49,    49,    50,    51,    52,    53,     9,    45,
+      10,     0,    11,    41,    66,     0,    12,    19,    63,     0,
+      13,    33,    14,    69,     0,     0,    16,     1,     2,     0,
+      55,     0,     4,     5,     0,     7,     8,    46,     0,    43,
+      42,    40,    67,    20,     0,     0,    61,     0,     0,    32,
+       0,    70,    73,     0,    56,     0,    48,    44,    68,    62,
+       0,    47,    59,     0,    15,    72,    75,    17,    64,    60,
+      23,     0,     0,    39,     0,    74,    71,    28,    29,    26,
+      27,    30,    31,    24,    25,    47,    47,    58,    59,    59,
+      59,    59,    23,    38,     0,    36,    37,    21,    22,    59,
+      59,    34,    35
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,    14,    15,    34,    35,    97,    98,    38,    39,    31,
-      32,    27,    54,    51,    28,    17,    75,    61,    48,    36,
-      42,    80,    88,    21
+      -1,    14,    15,    36,    37,   105,   106,    40,    41,    32,
+      33,    28,    58,    55,    29,    18,    93,    81,    66,    52,
+      38,    45,    86,    96,    22
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -74
+#define YYPACT_NINF -81
 static const yytype_int8 yypact[] =
 {
-      29,   -27,   -27,   -23,   -15,   -15,    30,    30,     2,    11,
-      19,   -15,    27,    33,     4,   -74,    -7,    48,    48,   -74,
-     -74,    26,    26,   -74,   -74,   -74,   -74,    -2,   -74,    -2,
-      55,     2,   -74,   -74,    11,   -74,    14,    18,    19,   -74,
-      50,   -74,    -3,   -74,   -74,   -74,    54,    52,   -74,   -74,
-     -15,   -74,   -74,   -74,    30,   -74,    -2,   -74,   -74,    57,
-      11,    53,    59,    60,   -74,   -15,    61,   -15,   -74,   -15,
-     -74,   -74,   -74,    62,   -15,    58,    63,    64,   -74,   -74,
-      67,   -74,   -74,   -74,    49,    68,    42,   -74,   -74,   -74,
-     -74,   -74,   -74,   -74,   -74,   -74,   -74,   -74,    58,   -74,
-      69,   -74,    49,    44,   -74,   -74,   -74
+      30,    27,    27,   -15,    -7,    -7,    64,    64,    -1,    35,
+      11,    -7,    38,    22,     4,   -81,    28,    31,    48,    48,
+     -81,   -81,    66,    66,   -81,   -81,   -81,   -81,    -2,   -81,
+      -2,    55,    -1,   -81,   -81,    67,    35,   -81,    59,    60,
+      11,   -81,    68,   -81,    71,    16,   -81,   -81,   -81,    72,
+     -81,    69,   -81,   -81,    -7,   -81,   -81,   -81,    64,   -81,
+      -2,   -81,   -81,   -81,    74,    35,    63,    75,    76,   -81,
+      -7,   -81,    77,    -7,   -81,    -7,   -81,   -81,   -81,    79,
+      -7,    80,   -26,    82,   -81,   -81,    85,   -81,   -81,   -81,
+      36,    86,    87,   -81,    51,   -81,   -81,   -81,   -81,   -81,
+     -81,   -81,   -81,   -81,   -81,    80,    80,   -81,    78,     1,
+      78,    78,    36,   -81,    65,   -81,   -81,   -81,   -81,    78,
+      78,   -81,   -81
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -74,   -74,    77,   -74,    66,    -1,   -74,   -74,    65,   -74,
-      71,    -4,   -73,    75,    51,   102,   -74,   -74,    88,    47,
-     -74,   -74,   -74,    -5
+     -81,   -81,    94,   -81,    81,     6,   -81,   -81,    83,   -81,
+      88,    -4,   -80,    96,    53,   119,   -37,   -81,   -81,   103,
+      61,   -81,   -81,   -81,    -5
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -708,32 +727,36 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -48
 static const yytype_int8 yytable[] =
 {
-      22,    16,    84,    29,    44,    19,    40,     1,     2,     3,
+      23,    90,    91,    30,    47,    92,    42,     1,     2,     3,
        4,     5,     6,     7,    20,     8,     9,    10,    11,   -47,
-     -47,   -47,   -47,    46,    12,   102,    56,    66,    67,    53,
-      30,    13,     1,     2,     3,     4,     5,     6,     7,    33,
-       8,     9,    10,    11,    59,    70,    60,    37,    62,    12,
-      63,    23,    24,    25,    26,    41,    13,    50,    89,    90,
-      78,    43,    81,    47,    82,    91,    92,    93,    94,    83,
-     100,    20,   105,    20,    95,    96,    23,    24,    25,    26,
-      65,   101,    68,    55,    69,    72,    74,    76,    77,    53,
-      79,    45,    59,    85,    86,    87,    99,    52,   106,   103,
-      58,   104,    57,    64,    18,    71,    49,    73
+     -47,   -47,   -47,    21,    12,   111,   112,    60,    31,    91,
+      57,    13,   114,     1,     2,     3,     4,     5,     6,     7,
+      39,     8,     9,    10,    11,    97,    98,    72,    73,    76,
+      12,    46,    99,   100,   101,   102,    16,    13,    17,    49,
+      50,   103,   104,    51,    34,    84,    35,    43,    87,    44,
+      88,   113,   115,   116,   117,    89,    24,    25,    26,    27,
+     109,    21,   121,   122,    59,    24,    25,    26,    27,   110,
+      64,    67,    65,    68,   119,    21,    62,    80,    54,    70,
+      71,    74,    75,    78,    82,    83,    91,    85,    48,   120,
+      64,    77,    57,    94,    95,   107,   108,    63,   118,    56,
+      61,    19,    53,    69,     0,     0,    79
 };
 
-static const yytype_uint8 yycheck[] =
+static const yytype_int8 yycheck[] =
 {
-       5,    28,    75,     7,     0,    28,    11,     3,     4,     5,
+       5,    81,    28,     7,     0,    31,    11,     3,     4,     5,
        6,     7,     8,     9,    29,    11,    12,    13,    14,    21,
-      22,    23,    24,    30,    20,    98,    30,    30,    31,    31,
-      28,    27,     3,     4,     5,     6,     7,     8,     9,    28,
-      11,    12,    13,    14,    30,    50,    32,    28,    30,    20,
-      32,    21,    22,    23,    24,    28,    27,    31,     9,    10,
-      65,    28,    67,    15,    69,    16,    17,    18,    19,    74,
-      28,    29,    28,    29,    25,    26,    21,    22,    23,    24,
-      30,    86,    28,    28,    32,    28,    33,    28,    28,    31,
-      29,    14,    30,    30,    30,    28,    28,    22,   103,    30,
-      34,   102,    31,    38,     2,    54,    18,    60
+      22,    23,    24,    30,    20,   105,   106,    31,    29,    28,
+      32,    27,    31,     3,     4,     5,     6,     7,     8,     9,
+      29,    11,    12,    13,    14,     9,    10,    31,    32,    54,
+      20,    29,    16,    17,    18,    19,    29,    27,    31,    31,
+      29,    25,    26,    15,    29,    70,    31,    29,    73,    31,
+      75,   108,   109,   110,   111,    80,    21,    22,    23,    24,
+      29,    30,   119,   120,    29,    21,    22,    23,    24,    94,
+      31,    31,    33,    33,    29,    30,    29,    34,    32,    31,
+      29,    29,    33,    29,    29,    29,    28,    30,    14,   114,
+      31,    58,    32,    31,    29,    29,    29,    36,   112,    23,
+      32,     2,    19,    40,    -1,    -1,    65
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
@@ -741,16 +764,18 @@ static const yytype_uint8 yycheck[] =
 static const yytype_uint8 yystos[] =
 {
        0,     3,     4,     5,     6,     7,     8,     9,    11,    12,
-      13,    14,    20,    27,    35,    36,    28,    49,    49,    28,
-      29,    57,    57,    21,    22,    23,    24,    45,    48,    45,
-      28,    43,    44,    28,    37,    38,    53,    28,    41,    42,
-      57,    28,    54,    28,     0,    36,    30,    15,    52,    52,
-      31,    47,    47,    31,    46,    28,    45,    44,    38,    30,
-      32,    51,    30,    32,    42,    30,    30,    31,    28,    32,
-      57,    48,    28,    53,    33,    50,    28,    28,    57,    29,
-      55,    57,    57,    57,    46,    30,    30,    28,    56,     9,
-      10,    16,    17,    18,    19,    25,    26,    39,    40,    28,
-      28,    57,    46,    30,    39,    28,    57
+      13,    14,    20,    27,    36,    37,    29,    31,    50,    50,
+      29,    30,    59,    59,    21,    22,    23,    24,    46,    49,
+      46,    29,    44,    45,    29,    31,    38,    39,    55,    29,
+      42,    43,    59,    29,    31,    56,    29,     0,    37,    31,
+      29,    15,    54,    54,    32,    48,    48,    32,    47,    29,
+      46,    45,    29,    39,    31,    33,    53,    31,    33,    43,
+      31,    29,    31,    32,    29,    33,    59,    49,    29,    55,
+      34,    52,    29,    29,    59,    30,    57,    59,    59,    59,
+      47,    28,    31,    51,    31,    29,    58,     9,    10,    16,
+      17,    18,    19,    25,    26,    40,    41,    29,    29,    29,
+      59,    47,    47,    51,    31,    51,    51,    51,    40,    29,
+      59,    51,    51
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1565,300 +1590,337 @@ yyreduce:
   switch (yyn)
     {
         case 4:
-#line 128 "deffilep.y"
+#line 140 "deffilep.y"
     { def_image_name ((yyvsp[(2) - (3)].id), (yyvsp[(3) - (3)].number), 0); }
     break;
 
   case 5:
-#line 129 "deffilep.y"
+#line 141 "deffilep.y"
     { def_image_name ((yyvsp[(2) - (3)].id), (yyvsp[(3) - (3)].number), 1); }
     break;
 
   case 6:
-#line 130 "deffilep.y"
+#line 142 "deffilep.y"
     { def_description ((yyvsp[(2) - (2)].id));}
     break;
 
   case 7:
-#line 131 "deffilep.y"
+#line 143 "deffilep.y"
     { def_stacksize ((yyvsp[(2) - (3)].number), (yyvsp[(3) - (3)].number));}
     break;
 
   case 8:
-#line 132 "deffilep.y"
+#line 144 "deffilep.y"
     { def_heapsize ((yyvsp[(2) - (3)].number), (yyvsp[(3) - (3)].number));}
     break;
 
   case 9:
-#line 133 "deffilep.y"
+#line 145 "deffilep.y"
     { def_section ("CODE", (yyvsp[(2) - (2)].number));}
     break;
 
   case 10:
-#line 134 "deffilep.y"
+#line 146 "deffilep.y"
     { def_section ("DATA", (yyvsp[(2) - (2)].number));}
     break;
 
   case 14:
-#line 138 "deffilep.y"
+#line 150 "deffilep.y"
     { def_version ((yyvsp[(2) - (2)].number), 0);}
     break;
 
   case 15:
-#line 139 "deffilep.y"
+#line 151 "deffilep.y"
     { def_version ((yyvsp[(2) - (4)].number), (yyvsp[(4) - (4)].number));}
     break;
 
   case 16:
-#line 140 "deffilep.y"
+#line 152 "deffilep.y"
     { def_directive ((yyvsp[(2) - (2)].id));}
     break;
 
   case 17:
-#line 141 "deffilep.y"
+#line 153 "deffilep.y"
     { def_aligncomm ((yyvsp[(2) - (4)].id), (yyvsp[(4) - (4)].number));}
     break;
 
   case 21:
-#line 156 "deffilep.y"
-    { def_exports ((yyvsp[(1) - (5)].id), (yyvsp[(2) - (5)].id), (yyvsp[(3) - (5)].number), (yyvsp[(5) - (5)].number)); }
+#line 168 "deffilep.y"
+    { def_exports ((yyvsp[(1) - (7)].id), (yyvsp[(2) - (7)].id), (yyvsp[(3) - (7)].number), (yyvsp[(5) - (7)].number), (yyvsp[(7) - (7)].id)); }
     break;
 
   case 22:
-#line 162 "deffilep.y"
+#line 174 "deffilep.y"
     { (yyval.number) = (yyvsp[(1) - (3)].number) | (yyvsp[(3) - (3)].number); }
     break;
 
   case 23:
-#line 163 "deffilep.y"
+#line 175 "deffilep.y"
     { (yyval.number) = 0; }
     break;
 
   case 24:
-#line 166 "deffilep.y"
+#line 178 "deffilep.y"
     { (yyval.number) = 1; }
     break;
 
   case 25:
-#line 167 "deffilep.y"
+#line 179 "deffilep.y"
     { (yyval.number) = 1; }
     break;
 
   case 26:
-#line 168 "deffilep.y"
+#line 180 "deffilep.y"
     { (yyval.number) = 2; }
     break;
 
   case 27:
-#line 169 "deffilep.y"
+#line 181 "deffilep.y"
     { (yyval.number) = 2; }
     break;
 
   case 28:
-#line 170 "deffilep.y"
+#line 182 "deffilep.y"
     { (yyval.number) = 4; }
     break;
 
   case 29:
-#line 171 "deffilep.y"
+#line 183 "deffilep.y"
     { (yyval.number) = 4; }
     break;
 
   case 30:
-#line 172 "deffilep.y"
+#line 184 "deffilep.y"
     { (yyval.number) = 8; }
     break;
 
   case 31:
-#line 173 "deffilep.y"
+#line 185 "deffilep.y"
     { (yyval.number) = 8; }
     break;
 
   case 34:
-#line 181 "deffilep.y"
-    { def_import ((yyvsp[(1) - (7)].id), (yyvsp[(3) - (7)].id), (yyvsp[(5) - (7)].id), (yyvsp[(7) - (7)].id), -1); }
+#line 194 "deffilep.y"
+    { def_import ((yyvsp[(1) - (8)].id), (yyvsp[(3) - (8)].id), (yyvsp[(5) - (8)].id), (yyvsp[(7) - (8)].id), -1, (yyvsp[(8) - (8)].id)); }
     break;
 
   case 35:
-#line 182 "deffilep.y"
-    { def_import ((yyvsp[(1) - (7)].id), (yyvsp[(3) - (7)].id), (yyvsp[(5) - (7)].id),  0, (yyvsp[(7) - (7)].number)); }
+#line 196 "deffilep.y"
+    { def_import ((yyvsp[(1) - (8)].id), (yyvsp[(3) - (8)].id), (yyvsp[(5) - (8)].id),  0, (yyvsp[(7) - (8)].number), (yyvsp[(8) - (8)].id)); }
     break;
 
   case 36:
-#line 183 "deffilep.y"
-    { def_import ((yyvsp[(1) - (5)].id), (yyvsp[(3) - (5)].id),  0, (yyvsp[(5) - (5)].id), -1); }
+#line 198 "deffilep.y"
+    { def_import ((yyvsp[(1) - (6)].id), (yyvsp[(3) - (6)].id),  0, (yyvsp[(5) - (6)].id), -1, (yyvsp[(6) - (6)].id)); }
     break;
 
   case 37:
-#line 184 "deffilep.y"
-    { def_import ((yyvsp[(1) - (5)].id), (yyvsp[(3) - (5)].id),  0,  0, (yyvsp[(5) - (5)].number)); }
+#line 200 "deffilep.y"
+    { def_import ((yyvsp[(1) - (6)].id), (yyvsp[(3) - (6)].id),  0,  0, (yyvsp[(5) - (6)].number), (yyvsp[(6) - (6)].id)); }
     break;
 
   case 38:
-#line 185 "deffilep.y"
-    { def_import ( 0, (yyvsp[(1) - (5)].id), (yyvsp[(3) - (5)].id), (yyvsp[(5) - (5)].id), -1); }
+#line 202 "deffilep.y"
+    { def_import( 0, (yyvsp[(1) - (6)].id), (yyvsp[(3) - (6)].id), (yyvsp[(5) - (6)].id), -1, (yyvsp[(6) - (6)].id)); }
     break;
 
   case 39:
-#line 186 "deffilep.y"
-    { def_import ( 0, (yyvsp[(1) - (3)].id),  0, (yyvsp[(3) - (3)].id), -1); }
+#line 204 "deffilep.y"
+    { def_import ( 0, (yyvsp[(1) - (4)].id),  0, (yyvsp[(3) - (4)].id), -1, (yyvsp[(4) - (4)].id)); }
     break;
 
   case 42:
-#line 195 "deffilep.y"
+#line 213 "deffilep.y"
     { def_section ((yyvsp[(1) - (2)].id), (yyvsp[(2) - (2)].number));}
     break;
 
   case 43:
-#line 196 "deffilep.y"
+#line 214 "deffilep.y"
     { def_section_alt ((yyvsp[(1) - (2)].id), (yyvsp[(2) - (2)].id));}
     break;
 
   case 44:
-#line 200 "deffilep.y"
+#line 218 "deffilep.y"
     { (yyval.number) = (yyvsp[(1) - (3)].number) | (yyvsp[(3) - (3)].number); }
     break;
 
   case 45:
-#line 201 "deffilep.y"
+#line 219 "deffilep.y"
     { (yyval.number) = (yyvsp[(1) - (1)].number); }
     break;
 
   case 48:
-#line 208 "deffilep.y"
+#line 226 "deffilep.y"
     { (yyval.number)=(yyvsp[(2) - (2)].number);}
     break;
 
   case 49:
-#line 209 "deffilep.y"
+#line 227 "deffilep.y"
     { (yyval.number)=-1;}
     break;
 
   case 50:
-#line 213 "deffilep.y"
+#line 231 "deffilep.y"
     { (yyval.number) = 1;}
     break;
 
   case 51:
-#line 214 "deffilep.y"
+#line 232 "deffilep.y"
     { (yyval.number) = 2;}
     break;
 
   case 52:
-#line 215 "deffilep.y"
+#line 233 "deffilep.y"
     { (yyval.number)=4;}
     break;
 
   case 53:
-#line 216 "deffilep.y"
+#line 234 "deffilep.y"
     { (yyval.number)=8;}
     break;
 
   case 54:
-#line 219 "deffilep.y"
+#line 237 "deffilep.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id); }
     break;
 
   case 55:
-#line 221 "deffilep.y"
-    { 
-	    char *name = xmalloc (strlen ((yyvsp[(1) - (3)].id)) + 1 + strlen ((yyvsp[(3) - (3)].id)) + 1);
-	    sprintf (name, "%s.%s", (yyvsp[(1) - (3)].id), (yyvsp[(3) - (3)].id));
+#line 239 "deffilep.y"
+    {
+	    char *name = def_pool_alloc (strlen ((yyvsp[(2) - (2)].id)) + 2);
+	    sprintf (name, ".%s", (yyvsp[(2) - (2)].id));
 	    (yyval.id) = name;
 	  }
     break;
 
   case 56:
-#line 226 "deffilep.y"
-    { (yyval.id) = ""; }
-    break;
-
-  case 57:
-#line 230 "deffilep.y"
-    { (yyval.number) = (yyvsp[(2) - (2)].number);}
-    break;
-
-  case 58:
-#line 231 "deffilep.y"
-    { (yyval.number) = -1;}
-    break;
-
-  case 59:
-#line 235 "deffilep.y"
-    { (yyval.id) = (yyvsp[(2) - (2)].id); }
-    break;
-
-  case 60:
-#line 236 "deffilep.y"
-    { (yyval.id) =  0; }
-    break;
-
-  case 61:
-#line 239 "deffilep.y"
-    { (yyval.number) = (yyvsp[(3) - (3)].number);}
-    break;
-
-  case 62:
-#line 240 "deffilep.y"
-    { (yyval.number) = -1;}
-    break;
-
-  case 63:
-#line 243 "deffilep.y"
-    { (yyval.id) = (yyvsp[(1) - (1)].id); }
-    break;
-
-  case 64:
 #line 245 "deffilep.y"
     { 
-	    char *name = xmalloc (strlen ((yyvsp[(1) - (3)].id)) + 1 + strlen ((yyvsp[(3) - (3)].id)) + 1);
+	    char *name = def_pool_alloc (strlen ((yyvsp[(1) - (3)].id)) + 1 + strlen ((yyvsp[(3) - (3)].id)) + 1);
 	    sprintf (name, "%s.%s", (yyvsp[(1) - (3)].id), (yyvsp[(3) - (3)].id));
 	    (yyval.id) = name;
 	  }
     break;
 
+  case 57:
+#line 250 "deffilep.y"
+    { (yyval.id) = ""; }
+    break;
+
+  case 58:
+#line 253 "deffilep.y"
+    { (yyval.id) = (yyvsp[(2) - (2)].id); }
+    break;
+
+  case 59:
+#line 254 "deffilep.y"
+    { (yyval.id) = 0; }
+    break;
+
+  case 60:
+#line 258 "deffilep.y"
+    { (yyval.number) = (yyvsp[(2) - (2)].number);}
+    break;
+
+  case 61:
+#line 259 "deffilep.y"
+    { (yyval.number) = -1;}
+    break;
+
+  case 62:
+#line 263 "deffilep.y"
+    { (yyval.id) = (yyvsp[(2) - (2)].id); }
+    break;
+
+  case 63:
+#line 264 "deffilep.y"
+    { (yyval.id) =  0; }
+    break;
+
+  case 64:
+#line 267 "deffilep.y"
+    { (yyval.number) = (yyvsp[(3) - (3)].number);}
+    break;
+
   case 65:
-#line 252 "deffilep.y"
-    { (yyval.id) = (yyvsp[(1) - (1)].id); }
+#line 268 "deffilep.y"
+    { (yyval.number) = -1;}
     break;
 
   case 66:
-#line 254 "deffilep.y"
+#line 271 "deffilep.y"
+    { (yyval.id) = (yyvsp[(1) - (1)].id); }
+    break;
+
+  case 67:
+#line 273 "deffilep.y"
     {
-	    char *id = xmalloc (strlen ((yyvsp[(1) - (4)].id)) + 1 + strlen ((yyvsp[(3) - (4)].digits)) + strlen ((yyvsp[(4) - (4)].id)) + 1);
+	    char *name = def_pool_alloc (strlen ((yyvsp[(2) - (2)].id)) + 2);
+	    sprintf (name, ".%s", (yyvsp[(2) - (2)].id));
+	    (yyval.id) = name;
+	  }
+    break;
+
+  case 68:
+#line 279 "deffilep.y"
+    { 
+	    char *name = def_pool_alloc (strlen ((yyvsp[(1) - (3)].id)) + 1 + strlen ((yyvsp[(3) - (3)].id)) + 1);
+	    sprintf (name, "%s.%s", (yyvsp[(1) - (3)].id), (yyvsp[(3) - (3)].id));
+	    (yyval.id) = name;
+	  }
+    break;
+
+  case 69:
+#line 286 "deffilep.y"
+    { (yyval.id) = (yyvsp[(1) - (1)].id); }
+    break;
+
+  case 70:
+#line 288 "deffilep.y"
+    {
+	    char *id = def_pool_alloc (strlen ((yyvsp[(2) - (2)].id)) + 2);
+	    sprintf (id, ".%s", (yyvsp[(2) - (2)].id));
+	    (yyval.id) = id;
+	  }
+    break;
+
+  case 71:
+#line 294 "deffilep.y"
+    {
+	    char *id = def_pool_alloc (strlen ((yyvsp[(1) - (4)].id)) + 1 + strlen ((yyvsp[(3) - (4)].digits)) + strlen ((yyvsp[(4) - (4)].id)) + 1);
 	    sprintf (id, "%s.%s%s", (yyvsp[(1) - (4)].id), (yyvsp[(3) - (4)].digits), (yyvsp[(4) - (4)].id));
 	    (yyval.id) = id;
 	  }
     break;
 
-  case 67:
-#line 261 "deffilep.y"
+  case 72:
+#line 301 "deffilep.y"
     { (yyval.digits) = (yyvsp[(1) - (1)].digits); }
     break;
 
-  case 68:
-#line 262 "deffilep.y"
+  case 73:
+#line 302 "deffilep.y"
     { (yyval.digits) = ""; }
     break;
 
-  case 69:
-#line 265 "deffilep.y"
+  case 74:
+#line 305 "deffilep.y"
     { (yyval.id) = (yyvsp[(1) - (1)].id); }
     break;
 
-  case 70:
-#line 266 "deffilep.y"
+  case 75:
+#line 306 "deffilep.y"
     { (yyval.id) = ""; }
     break;
 
-  case 71:
-#line 269 "deffilep.y"
+  case 76:
+#line 309 "deffilep.y"
     { (yyval.number) = strtoul ((yyvsp[(1) - (1)].digits), 0, 0); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1862 "deffilep.c"
+#line 1924 "deffilep.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2072,7 +2134,7 @@ yyreturn:
 }
 
 
-#line 271 "deffilep.y"
+#line 311 "deffilep.y"
 
 
 /*****************************************************************************
@@ -2134,213 +2196,314 @@ def_file_parse (const char *filename, def_file *add_to)
     {
       def_file_free (def);
       fclose (the_file);
+      def_pool_free ();
       return 0;
     }
 
   fclose (the_file);
 
-  for (d = directives; d; d = d->next)
+  while ((d = directives) != NULL)
     {
 #if TRACE
       printf ("Adding directive %08x `%s'\n", d->name, d->name);
 #endif
       def_file_add_directive (def, d->name, d->len);
+      directives = d->next;
+      free (d->name);
+      free (d);
     }
+  def_pool_free ();
 
   return def;
 }
 
 void
-def_file_free (def_file *def)
+def_file_free (def_file *fdef)
 {
   int i;
 
-  if (!def)
+  if (!fdef)
     return;
-  if (def->name)
-    free (def->name);
-  if (def->description)
-    free (def->description);
+  if (fdef->name)
+    free (fdef->name);
+  if (fdef->description)
+    free (fdef->description);
 
-  if (def->section_defs)
+  if (fdef->section_defs)
     {
-      for (i = 0; i < def->num_section_defs; i++)
+      for (i = 0; i < fdef->num_section_defs; i++)
 	{
-	  if (def->section_defs[i].name)
-	    free (def->section_defs[i].name);
-	  if (def->section_defs[i].class)
-	    free (def->section_defs[i].class);
+	  if (fdef->section_defs[i].name)
+	    free (fdef->section_defs[i].name);
+	  if (fdef->section_defs[i].class)
+	    free (fdef->section_defs[i].class);
 	}
-      free (def->section_defs);
+      free (fdef->section_defs);
     }
 
-  if (def->exports)
+  if (fdef->exports)
     {
-      for (i = 0; i < def->num_exports; i++)
+      for (i = 0; i < fdef->num_exports; i++)
 	{
-	  if (def->exports[i].internal_name
-	      && def->exports[i].internal_name != def->exports[i].name)
-	    free (def->exports[i].internal_name);
-	  if (def->exports[i].name)
-	    free (def->exports[i].name);
+	  if (fdef->exports[i].internal_name
+	      && fdef->exports[i].internal_name != fdef->exports[i].name)
+	    free (fdef->exports[i].internal_name);
+	  if (fdef->exports[i].name)
+	    free (fdef->exports[i].name);
+	  if (fdef->exports[i].its_name)
+	    free (fdef->exports[i].its_name);
 	}
-      free (def->exports);
+      free (fdef->exports);
     }
 
-  if (def->imports)
+  if (fdef->imports)
     {
-      for (i = 0; i < def->num_imports; i++)
+      for (i = 0; i < fdef->num_imports; i++)
 	{
-	  if (def->imports[i].internal_name
-	      && def->imports[i].internal_name != def->imports[i].name)
-	    free (def->imports[i].internal_name);
-	  if (def->imports[i].name)
-	    free (def->imports[i].name);
+	  if (fdef->imports[i].internal_name
+	      && fdef->imports[i].internal_name != fdef->imports[i].name)
+	    free (fdef->imports[i].internal_name);
+	  if (fdef->imports[i].name)
+	    free (fdef->imports[i].name);
+	  if (fdef->imports[i].its_name)
+	    free (fdef->imports[i].its_name);
 	}
-      free (def->imports);
+      free (fdef->imports);
     }
 
-  while (def->modules)
+  while (fdef->modules)
     {
-      def_file_module *m = def->modules;
-      def->modules = def->modules->next;
+      def_file_module *m = fdef->modules;
+
+      fdef->modules = fdef->modules->next;
       free (m);
     }
 
-  while (def->aligncomms)
+  while (fdef->aligncomms)
     {
-      def_file_aligncomm *c = def->aligncomms;
-      def->aligncomms = def->aligncomms->next;
+      def_file_aligncomm *c = fdef->aligncomms;
+
+      fdef->aligncomms = fdef->aligncomms->next;
       free (c->symbol_name);
       free (c);
     }
 
-  free (def);
+  free (fdef);
 }
 
 #ifdef DEF_FILE_PRINT
 void
-def_file_print (FILE *file, def_file *def)
+def_file_print (FILE *file, def_file *fdef)
 {
   int i;
 
-  fprintf (file, ">>>> def_file at 0x%08x\n", def);
-  if (def->name)
-    fprintf (file, "  name: %s\n", def->name ? def->name : "(unspecified)");
-  if (def->is_dll != -1)
-    fprintf (file, "  is dll: %s\n", def->is_dll ? "yes" : "no");
-  if (def->base_address != (bfd_vma) -1)
-    fprintf (file, "  base address: 0x%08x\n", def->base_address);
-  if (def->description)
-    fprintf (file, "  description: `%s'\n", def->description);
-  if (def->stack_reserve != -1)
-    fprintf (file, "  stack reserve: 0x%08x\n", def->stack_reserve);
-  if (def->stack_commit != -1)
-    fprintf (file, "  stack commit: 0x%08x\n", def->stack_commit);
-  if (def->heap_reserve != -1)
-    fprintf (file, "  heap reserve: 0x%08x\n", def->heap_reserve);
-  if (def->heap_commit != -1)
-    fprintf (file, "  heap commit: 0x%08x\n", def->heap_commit);
+  fprintf (file, ">>>> def_file at 0x%08x\n", fdef);
+  if (fdef->name)
+    fprintf (file, "  name: %s\n", fdef->name ? fdef->name : "(unspecified)");
+  if (fdef->is_dll != -1)
+    fprintf (file, "  is dll: %s\n", fdef->is_dll ? "yes" : "no");
+  if (fdef->base_address != (bfd_vma) -1)
+    fprintf (file, "  base address: 0x%08x\n", fdef->base_address);
+  if (fdef->description)
+    fprintf (file, "  description: `%s'\n", fdef->description);
+  if (fdef->stack_reserve != -1)
+    fprintf (file, "  stack reserve: 0x%08x\n", fdef->stack_reserve);
+  if (fdef->stack_commit != -1)
+    fprintf (file, "  stack commit: 0x%08x\n", fdef->stack_commit);
+  if (fdef->heap_reserve != -1)
+    fprintf (file, "  heap reserve: 0x%08x\n", fdef->heap_reserve);
+  if (fdef->heap_commit != -1)
+    fprintf (file, "  heap commit: 0x%08x\n", fdef->heap_commit);
 
-  if (def->num_section_defs > 0)
+  if (fdef->num_section_defs > 0)
     {
       fprintf (file, "  section defs:\n");
 
-      for (i = 0; i < def->num_section_defs; i++)
+      for (i = 0; i < fdef->num_section_defs; i++)
 	{
 	  fprintf (file, "    name: `%s', class: `%s', flags:",
-		   def->section_defs[i].name, def->section_defs[i].class);
-	  if (def->section_defs[i].flag_read)
+		   fdef->section_defs[i].name, fdef->section_defs[i].class);
+	  if (fdef->section_defs[i].flag_read)
 	    fprintf (file, " R");
-	  if (def->section_defs[i].flag_write)
+	  if (fdef->section_defs[i].flag_write)
 	    fprintf (file, " W");
-	  if (def->section_defs[i].flag_execute)
+	  if (fdef->section_defs[i].flag_execute)
 	    fprintf (file, " X");
-	  if (def->section_defs[i].flag_shared)
+	  if (fdef->section_defs[i].flag_shared)
 	    fprintf (file, " S");
 	  fprintf (file, "\n");
 	}
     }
 
-  if (def->num_exports > 0)
+  if (fdef->num_exports > 0)
     {
       fprintf (file, "  exports:\n");
 
-      for (i = 0; i < def->num_exports; i++)
+      for (i = 0; i < fdef->num_exports; i++)
 	{
 	  fprintf (file, "    name: `%s', int: `%s', ordinal: %d, flags:",
-		   def->exports[i].name, def->exports[i].internal_name,
-		   def->exports[i].ordinal);
-	  if (def->exports[i].flag_private)
+		   fdef->exports[i].name, fdef->exports[i].internal_name,
+		   fdef->exports[i].ordinal);
+	  if (fdef->exports[i].flag_private)
 	    fprintf (file, " P");
-	  if (def->exports[i].flag_constant)
+	  if (fdef->exports[i].flag_constant)
 	    fprintf (file, " C");
-	  if (def->exports[i].flag_noname)
+	  if (fdef->exports[i].flag_noname)
 	    fprintf (file, " N");
-	  if (def->exports[i].flag_data)
+	  if (fdef->exports[i].flag_data)
 	    fprintf (file, " D");
 	  fprintf (file, "\n");
 	}
     }
 
-  if (def->num_imports > 0)
+  if (fdef->num_imports > 0)
     {
       fprintf (file, "  imports:\n");
 
-      for (i = 0; i < def->num_imports; i++)
+      for (i = 0; i < fdef->num_imports; i++)
 	{
 	  fprintf (file, "    int: %s, from: `%s', name: `%s', ordinal: %d\n",
-		   def->imports[i].internal_name,
-		   def->imports[i].module,
-		   def->imports[i].name,
-		   def->imports[i].ordinal);
+		   fdef->imports[i].internal_name,
+		   fdef->imports[i].module,
+		   fdef->imports[i].name,
+		   fdef->imports[i].ordinal);
 	}
     }
 
-  if (def->version_major != -1)
-    fprintf (file, "  version: %d.%d\n", def->version_major, def->version_minor);
+  if (fdef->version_major != -1)
+    fprintf (file, "  version: %d.%d\n", fdef->version_major, fdef->version_minor);
 
-  fprintf (file, "<<<< def_file at 0x%08x\n", def);
+  fprintf (file, "<<<< def_file at 0x%08x\n", fdef);
 }
 #endif
 
+/* Helper routine to check for identity of string pointers,
+   which might be NULL.  */
+
+static int
+are_names_equal (const char *s1, const char *s2)
+{
+  if (!s1 && !s2)
+    return 0;
+  if (!s1 || !s2)
+    return (!s1 ? -1 : 1);
+  return strcmp (s1, s2);
+}
+
+static int
+cmp_export_elem (const def_file_export *e, const char *ex_name,
+		 const char *in_name, const char *its_name,
+		 int ord)
+{
+  int r;
+
+  if ((r = are_names_equal (ex_name, e->name)) != 0)
+    return r;
+  if ((r = are_names_equal (in_name, e->internal_name)) != 0)
+    return r;
+  if ((r = are_names_equal (its_name, e->its_name)) != 0)
+    return r;
+  return (ord - e->ordinal);
+}
+
+/* Search the position of the identical element, or returns the position
+   of the next higher element. If last valid element is smaller, then MAX
+   is returned.  */
+
+static int
+find_export_in_list (def_file_export *b, int max,
+		     const char *ex_name, const char *in_name,
+		     const char *its_name, int ord, int *is_ident)
+{
+  int e, l, r, p;
+
+  *is_ident = 0;
+  if (!max)
+    return 0;
+  if ((e = cmp_export_elem (b, ex_name, in_name, its_name, ord)) <= 0)
+    return 0;
+  if (max == 1)
+    return 1;
+  if ((e = cmp_export_elem (b + (max - 1), ex_name, in_name, its_name, ord)) > 0)
+    return max;
+  else if (!e || max == 2)
+    return max - 1;
+  l = 0; r = max - 1;
+  while (l < r)
+    {
+      p = (l + r) / 2;
+      e = cmp_export_elem (b + p, ex_name, in_name, its_name, ord);
+      if (!e)
+        {
+          *is_ident = 1;
+          return p;
+        }
+      else if (e < 0)
+        r = p - 1;
+      else if (e > 0)
+        l = p + 1;
+    }
+  if ((e = cmp_export_elem (b + l, ex_name, in_name, its_name, ord)) > 0)
+    ++l;
+  else if (!e)
+    *is_ident = 1;
+  return l;
+}
+
 def_file_export *
-def_file_add_export (def_file *def,
+def_file_add_export (def_file *fdef,
 		     const char *external_name,
 		     const char *internal_name,
-		     int ordinal)
+		     int ordinal,
+		     const char *its_name,
+		     int *is_dup)
 {
   def_file_export *e;
-  int max_exports = ROUND_UP(def->num_exports, 32);
+  int pos;
+  int max_exports = ROUND_UP(fdef->num_exports, 32);
 
-  if (def->num_exports >= max_exports)
-    {
-      max_exports = ROUND_UP(def->num_exports + 1, 32);
-      if (def->exports)
-	def->exports = xrealloc (def->exports,
-				 max_exports * sizeof (def_file_export));
-      else
-	def->exports = xmalloc (max_exports * sizeof (def_file_export));
-    }
-  e = def->exports + def->num_exports;
-  memset (e, 0, sizeof (def_file_export));
   if (internal_name && !external_name)
     external_name = internal_name;
   if (external_name && !internal_name)
     internal_name = external_name;
+
+  /* We need to avoid duplicates.  */
+  *is_dup = 0;
+  pos = find_export_in_list (fdef->exports, fdef->num_exports,
+		     external_name, internal_name,
+		     its_name, ordinal, is_dup);
+
+  if (*is_dup != 0)
+    return (fdef->exports + pos);
+
+  if (fdef->num_exports >= max_exports)
+    {
+      max_exports = ROUND_UP(fdef->num_exports + 1, 32);
+      if (fdef->exports)
+	fdef->exports = xrealloc (fdef->exports,
+				 max_exports * sizeof (def_file_export));
+      else
+	fdef->exports = xmalloc (max_exports * sizeof (def_file_export));
+    }
+
+  e = fdef->exports + pos;
+  if (pos != fdef->num_exports)
+    memmove (&e[1], e, (sizeof (def_file_export) * (fdef->num_exports - pos)));
+  memset (e, 0, sizeof (def_file_export));
   e->name = xstrdup (external_name);
   e->internal_name = xstrdup (internal_name);
+  e->its_name = (its_name ? xstrdup (its_name) : NULL);
   e->ordinal = ordinal;
-  def->num_exports++;
+  fdef->num_exports++;
   return e;
 }
 
 def_file_module *
-def_get_module (def_file *def, const char *name)
+def_get_module (def_file *fdef, const char *name)
 {
   def_file_module *s;
 
-  for (s = def->modules; s; s = s->next)
+  for (s = fdef->modules; s; s = s->next)
     if (strcmp (s->name, name) == 0)
       return s;
 
@@ -2348,52 +2511,127 @@ def_get_module (def_file *def, const char *name)
 }
 
 static def_file_module *
-def_stash_module (def_file *def, const char *name)
+def_stash_module (def_file *fdef, const char *name)
 {
   def_file_module *s;
 
-  if ((s = def_get_module (def, name)) != NULL)
+  if ((s = def_get_module (fdef, name)) != NULL)
       return s;
   s = xmalloc (sizeof (def_file_module) + strlen (name));
-  s->next = def->modules;
-  def->modules = s;
+  s->next = fdef->modules;
+  fdef->modules = s;
   s->user_data = 0;
   strcpy (s->name, name);
   return s;
 }
 
+static int
+cmp_import_elem (const def_file_import *e, const char *ex_name,
+		 const char *in_name, const char *module,
+		 int ord)
+{
+  int r;
+
+  if ((r = are_names_equal (ex_name, e->name)) != 0)
+    return r;
+  if ((r = are_names_equal (in_name, e->internal_name)) != 0)
+    return r;
+  if (ord != e->ordinal)
+    return (ord < e->ordinal ? -1 : 1);
+  return are_names_equal (module, (e->module ? e->module->name : NULL));
+}
+
+/* Search the position of the identical element, or returns the position
+   of the next higher element. If last valid element is smaller, then MAX
+   is returned.  */
+
+static int
+find_import_in_list (def_file_import *b, int max,
+		     const char *ex_name, const char *in_name,
+		     const char *module, int ord, int *is_ident)
+{
+  int e, l, r, p;
+
+  *is_ident = 0;
+  if (!max)
+    return 0;
+  if ((e = cmp_import_elem (b, ex_name, in_name, module, ord)) <= 0)
+    return 0;
+  if (max == 1)
+    return 1;
+  if ((e = cmp_import_elem (b + (max - 1), ex_name, in_name, module, ord)) > 0)
+    return max;
+  else if (!e || max == 2)
+    return max - 1;
+  l = 0; r = max - 1;
+  while (l < r)
+    {
+      p = (l + r) / 2;
+      e = cmp_import_elem (b + p, ex_name, in_name, module, ord);
+      if (!e)
+        {
+          *is_ident = 1;
+          return p;
+        }
+      else if (e < 0)
+        r = p - 1;
+      else if (e > 0)
+        l = p + 1;
+    }
+  if ((e = cmp_import_elem (b + l, ex_name, in_name, module, ord)) > 0)
+    ++l;
+  else if (!e)
+    *is_ident = 1;
+  return l;
+}
+
 def_file_import *
-def_file_add_import (def_file *def,
+def_file_add_import (def_file *fdef,
 		     const char *name,
 		     const char *module,
 		     int ordinal,
-		     const char *internal_name)
+		     const char *internal_name,
+		     const char *its_name,
+		     int *is_dup)
 {
   def_file_import *i;
-  int max_imports = ROUND_UP (def->num_imports, 16);
+  int pos;
+  int max_imports = ROUND_UP (fdef->num_imports, 16);
 
-  if (def->num_imports >= max_imports)
+  /* We need to avoid here duplicates.  */
+  *is_dup = 0;
+  pos = find_import_in_list (fdef->imports, fdef->num_imports,
+			     name,
+			     (!internal_name ? name : internal_name),
+			     module, ordinal, is_dup);
+  if (*is_dup != 0)
+    return fdef->imports + pos;
+
+  if (fdef->num_imports >= max_imports)
     {
-      max_imports = ROUND_UP (def->num_imports+1, 16);
+      max_imports = ROUND_UP (fdef->num_imports+1, 16);
 
-      if (def->imports)
-	def->imports = xrealloc (def->imports,
+      if (fdef->imports)
+	fdef->imports = xrealloc (fdef->imports,
 				 max_imports * sizeof (def_file_import));
       else
-	def->imports = xmalloc (max_imports * sizeof (def_file_import));
+	fdef->imports = xmalloc (max_imports * sizeof (def_file_import));
     }
-  i = def->imports + def->num_imports;
+  i = fdef->imports + pos;
+  if (pos != fdef->num_imports)
+    memmove (&i[1], i, (sizeof (def_file_import) * (fdef->num_imports - pos)));
   memset (i, 0, sizeof (def_file_import));
   if (name)
     i->name = xstrdup (name);
   if (module)
-    i->module = def_stash_module (def, module);
+    i->module = def_stash_module (fdef, module);
   i->ordinal = ordinal;
   if (internal_name)
     i->internal_name = xstrdup (internal_name);
   else
     i->internal_name = i->name;
-  def->num_imports++;
+  i->its_name = (its_name ? xstrdup (its_name) : NULL);
+  fdef->num_imports++;
 
   return i;
 }
@@ -2446,7 +2684,7 @@ def_file_add_directive (def_file *my_def, const char *param, int len)
 
       for (i = 0; diropts[i].param; i++)
 	{
-	  int len = strlen (diropts[i].param);
+	  len = strlen (diropts[i].param);
 
 	  if (tend - param >= len
 	      && strncmp (param, diropts[i].param, len) == 0
@@ -2478,6 +2716,7 @@ def_file_add_directive (def_file *my_def, const char *param, int len)
     }
 
   def = save_def;
+  def_pool_free ();
 }
 
 /* Parser Callbacks.  */
@@ -2490,6 +2729,7 @@ def_image_name (const char *name, int base, int is_dll)
   if (*name)
     {
       const char* image_name = lbasename (name);
+
       if (image_name != name)
 	einfo ("%s:%d: Warning: path components stripped from %s, '%s'\n",
 	       def_filename, linenumber, is_dll ? "LIBRARY" : "NAME",
@@ -2610,9 +2850,11 @@ static void
 def_exports (const char *external_name,
 	     const char *internal_name,
 	     int ordinal,
-	     int flags)
+	     int flags,
+	     const char *its_name)
 {
   def_file_export *dfe;
+  int is_dup = 0;
 
   if (!internal_name && external_name)
     internal_name = external_name;
@@ -2620,7 +2862,14 @@ def_exports (const char *external_name,
   printf ("def_exports, ext=%s int=%s\n", external_name, internal_name);
 #endif
 
-  dfe = def_file_add_export (def, external_name, internal_name, ordinal);
+  dfe = def_file_add_export (def, external_name, internal_name, ordinal,
+			     its_name, &is_dup);
+
+  /* We might check here for flag redefinition and warn.  For now we
+     ignore duplicates silently.  */
+  if (is_dup)
+    return;
+
   if (flags & 1)
     dfe->flag_noname = 1;
   if (flags & 2)
@@ -2636,18 +2885,20 @@ def_import (const char *internal_name,
 	    const char *module,
 	    const char *dllext,
 	    const char *name,
-	    int ordinal)
+	    int ordinal,
+	    const char *its_name)
 {
   char *buf = 0;
-  const char *ext = dllext ? dllext : "dll";    
+  const char *ext = dllext ? dllext : "dll";
+  int is_dup = 0;
    
   buf = xmalloc (strlen (module) + strlen (ext) + 2);
   sprintf (buf, "%s.%s", module, ext);
   module = buf;
 
-  def_file_add_import (def, name, module, ordinal, internal_name);
-  if (buf)
-    free (buf);
+  def_file_add_import (def, name, module, ordinal, internal_name, its_name,
+		       &is_dup);
+  free (buf);
 }
 
 static void
@@ -2671,13 +2922,39 @@ def_directive (char *str)
 static void
 def_aligncomm (char *str, int align)
 {
-  def_file_aligncomm *c = xmalloc (sizeof (def_file_aligncomm));
+  def_file_aligncomm *c, *p;
+  
+  p = NULL;
+  c = def->aligncomms;
+  while (c != NULL)
+    {
+      int e = strcmp (c->symbol_name, str);
+      if (!e)
+	{
+	  /* Not sure if we want to allow here duplicates with
+	     different alignments, but for now we keep them.  */
+	  e = (int) c->alignment - align;
+	  if (!e)
+	    return;
+	}
+      if (e > 0)
+        break;
+      c = (p = c)->next;
+    }
 
+  c = xmalloc (sizeof (def_file_aligncomm));
   c->symbol_name = xstrdup (str);
   c->alignment = (unsigned int) align;
-
-  c->next = def->aligncomms;
-  def->aligncomms = c;
+  if (!p)
+    {
+      c->next = def->aligncomms;
+      def->aligncomms = c;
+    }
+  else
+    {
+      c->next = p->next;
+      p->next = c;
+    }
 }
 
 static int
@@ -2836,7 +3113,7 @@ def_lex (void)
 	}
       if (c != EOF)
 	def_ungetc (c);
-      yylval.digits = xstrdup (buffer);
+      yylval.digits = def_pool_strdup (buffer);
 #if TRACE
       printf ("lex: `%s' returns DIGITS\n", buffer);
 #endif
@@ -2864,7 +3141,7 @@ def_lex (void)
 #endif
 	}
 
-      while (c != EOF && (ISALNUM (c) || strchr ("$:-_?/@", c)))
+      while (c != EOF && (ISALNUM (c) || strchr ("$:-_?/@<>", c)))
 	{
 	  put_buf (c);
 	  c = def_getc ();
@@ -2885,7 +3162,7 @@ def_lex (void)
 #if TRACE
       printf ("lex: `%s' returns ID\n", buffer);
 #endif
-      yylval.id = xstrdup (buffer);
+      yylval.id = def_pool_strdup (buffer);
       return ID;
     }
 
@@ -2900,14 +3177,30 @@ def_lex (void)
 	  put_buf (c);
 	  c = def_getc ();
 	}
-      yylval.id = xstrdup (buffer);
+      yylval.id = def_pool_strdup (buffer);
 #if TRACE
       printf ("lex: `%s' returns ID\n", buffer);
 #endif
       return ID;
     }
 
-  if (c == '=' || c == '.' || c == ',')
+  if ( c == '=')
+    {
+      c = def_getc ();
+      if (c == '=')
+        {
+#if TRACE
+          printf ("lex: `==' returns EQUAL\n");
+#endif
+		  return EQUAL;
+        }
+      def_ungetc (c);
+#if TRACE
+      printf ("lex: `=' returns itself\n");
+#endif
+      return '=';
+    }
+  if (c == '.' || c == ',')
     {
 #if TRACE
       printf ("lex: `%c' returns itself\n", c);
@@ -2923,5 +3216,40 @@ def_lex (void)
 
   /*printf ("lex: 0x%02x ignored\n", c); */
   return def_lex ();
+}
+
+static char *
+def_pool_alloc (size_t sz)
+{
+  def_pool_str *e;
+
+  e = (def_pool_str *) xmalloc (sizeof (def_pool_str) + sz);
+  e->next = pool_strs;
+  pool_strs = e;
+  return e->data;
+}
+
+static char *
+def_pool_strdup (const char *str)
+{
+  char *s;
+  size_t len;
+  if (!str)
+    return NULL;
+  len = strlen (str) + 1;
+  s = def_pool_alloc (len);
+  memcpy (s, str, len);
+  return s;
+}
+
+static void
+def_pool_free (void)
+{
+  def_pool_str *p;
+  while ((p = pool_strs) != NULL)
+    {
+      pool_strs = p->next;
+      free (p);
+    }
 }
 

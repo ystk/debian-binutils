@@ -58,14 +58,19 @@ CPU_DOCS = \
 	c-pdp11.texi \
 	c-pj.texi \
 	c-ppc.texi \
+	c-rx.texi \
 	c-s390.texi \
 	c-score.texi \
 	c-sh.texi \
 	c-sh64.texi \
 	c-sparc.texi \
         c-tic54x.texi \
+        c-tic6x.texi \
+	c-tilegx.texi \
+	c-tilepro.texi \
 	c-vax.texi \
 	c-v850.texi \
+	c-xstormy16.texi \
 	c-xtensa.texi \
 	c-z80.texi \
 	c-z8k.texi
