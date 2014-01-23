@@ -18,4 +18,8 @@ if [ install = "$1" -o upgrade = "$1" ]; then
 	--package binutils-gold \
 	--add --rename \
 	--divert /usr/bin/ld.bfd-link /usr/bin/ld
+    dpkg-divert \
+	--package binutils-gold \
+	--add --rename \
+	--divert /usr/share/man/man1/ld.bfd-link.1.gz /usr/share/man/man1/ld.1.gz
 fi

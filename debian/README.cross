@@ -13,10 +13,14 @@ To build a cross-binutils package:
 
  o Then build the cross-binutils package:
    
-    TARGET=<your-target> fakeroot debian/rules binary-cross
+    TARGET=<your-target> dpkg-buildpackage -b -uc -us 
+    or 
+    echo arm >debian/target; dpkg-buildpackage -b -uc -us
 
    (substitute your target name, e.g. "arm" or "m68k", instead of
     "<your-target>")
 
 ---
 Nikita Youshchenko <yoush@cs.msu.su>
+Hector Oron <zumbi@debian.org>
+Marcin Juszkiewicz <marcin.juszkiewicz@linaro.org>

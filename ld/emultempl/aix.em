@@ -10,7 +10,7 @@ fragment <<EOF
 
 /* AIX emulation code for ${EMULATION_NAME}
    Copyright 1991, 1993, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2006, 2007, 2008, 2009
+   2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
    Free Software Foundation, Inc.
    Written by Steve Chamberlain <sac@cygnus.com>
    AIX support by Ian Lance Taylor <ian@cygnus.com>
@@ -216,6 +216,7 @@ gld${EMULATION_NAME}_add_options
     {"bexpall", no_argument, NULL, OPTION_EXPALL},
     {"bexpfull", no_argument, NULL, OPTION_EXPFULL},
     {"bexport", required_argument, NULL, OPTION_EXPORT},
+    {"bbigtoc", no_argument, NULL, OPTION_IGNORE},
     {"bf", no_argument, NULL, OPTION_ERNOTOK},
     {"bgc", no_argument, &gc, 1},
     {"bh", required_argument, NULL, OPTION_IGNORE},
@@ -607,6 +608,8 @@ gld${EMULATION_NAME}_after_open (void)
 {
   bfd_boolean r;
   struct set_info *p;
+
+  after_open_default ();
 
   /* Call ldctor_build_sets, after pretending that this is a
      relocatable link.  We do this because AIX requires relocation
@@ -1193,7 +1196,7 @@ gld${EMULATION_NAME}_read_file (const char *filename, bfd_boolean import)
 	    {
 	      struct export_symbol_list *n;
 
-	      ldlang_add_undef (symname);
+	      ldlang_add_undef (symname, TRUE);
 	      n = ((struct export_symbol_list *)
 		   xmalloc (sizeof (struct export_symbol_list)));
 	      n->next = export_symbols;
@@ -1424,13 +1427,11 @@ gld${EMULATION_NAME}_open_dynamic_archive (const char *arch,
 					   search_dirs_type *search,
 					   lang_input_statement_type *entry)
 {
-  const char *filename;
   char *path;
 
-  if (!entry->is_archive)
+  if (!entry->maybe_archive)
     return FALSE;
 
-  filename = entry->filename;
   path = concat (search->name, "/lib", entry->filename, arch, ".a", NULL);
   if (!ldfile_try_open_bfd (path, entry))
     {

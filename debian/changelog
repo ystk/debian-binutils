@@ -1,42 +1,635 @@
-binutils (2.20.1-16) unstable; urgency=low
+binutils (2.22-8) unstable; urgency=low
 
-  * Add arm-linux-gnueabi to the multiarch targets, remove the old
-    arm*-linux-gnu targets. Addresses #610745.
+  * Fix PR other/54411: integer overflow in objalloc_alloc.
+    CVE-2012-3509. Closes: #688951.
 
- -- Matthias Klose <doko@debian.org>  Tue, 25 Jan 2011 01:18:25 +0100
+ -- Matthias Klose <doko@debian.org>  Sat, 23 Feb 2013 02:28:11 +0100
 
-binutils (2.20.1-15) unstable; urgency=low
+binutils (2.22-7.1) unstable; urgency=low
 
-  * Fix PR ld/10144, mips/ld: non-dynamic relocations refer to dynamic symbol
-    (Aurelian Jarno). Closes: #519006.
-  * Apply two patches from binutils experimental. Closes: #597220.
-    - Link executables statically when `static' is passed in DEB_BUILD_OPTIONS
-      (Jim Heck). Closes: #590101.
-    - debian/rules: Introduce PF macros (Jim Heck). Closes: #588357.
+  * Non-maintainer upload.
+    ACK'd NMU by Matthias. Thank you.
+  * Fix PR binutils/14319. (Closes: #681597)
+    Add patches/pr14319.diff.
+
+ -- Nobuhiro Iwamatsu <iwamatsu@debian.org>  Sat, 14 Jul 2012 23:31:31 +0900
+
+binutils (2.22-7) unstable; urgency=low
+
+  * Update from the binutils-2_22-branch 20120704.
+    - Fix PR ld/13991 and a gold issue on ARM.
+  * Fix strict-alias warning building libiberty/md5.c. Closes: #674831.
+  * Enable x86_64-pep in binutils-multiarch. Closes: #675364.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 04 Jul 2012 11:00:14 +0200
+
+binutils (2.22-6.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Fix PR ld/14069 (hurd-i386) (Closes: #671804).
+
+ -- Samuel Thibault <sthibault@debian.org>  Fri, 18 May 2012 11:52:14 +0200
+
+binutils (2.22-6) unstable; urgency=low
+
+  * Update from the binutils-2_22-branch 20120307.
+    - Fix PR ld/12161 (avr), PR binutils/13622 (readelf crash),
+      PR binutils/13476 (hppa), PR ld/13387 (hppa), 
+  * Fix typo in elf64-x86-64.c, follow-up patch to PR ld/13302.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 08 Mar 2012 18:52:20 +0100
+
+binutils (2.22-5) unstable; urgency=low
+
+  * Update from the binutils-2_22-branch 20120124.
+    - Fix PR ld/13581 (x32).
+  * Fix PR gas/13449 (ARM), taken from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 24 Jan 2012 21:26:43 +0100
+
+binutils (2.22-4) unstable; urgency=low
+
+  * Don't bump the soversion (revert the change in 2.22-3).
+  * Apply proposed patch for PR binutils/13534, allowing ar to handle
+    files bigger than 2GB (Francois Gouget). Closes: #652887).
+  * Recognize DW_LANG_Go in readelf (backport from trunk).
+
+ -- Matthias Klose <doko@debian.org>  Sat, 07 Jan 2012 09:07:25 +0100
+
+binutils (2.22-3) unstable; urgency=low
+
+  * Update from the binutils-2_22-branch 20120102.
+    - gold updates.
+    - mips updates.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 03 Jan 2012 06:06:20 +0100
+
+binutils (2.22-2) unstable; urgency=low
+
+  * Update from the binutils-2_22-branch 20111211.
+  * Fix build failure with make 3.82 (Daniel Schepler). Closes: #650064.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 11 Dec 2011 16:30:14 +0000
+
+binutils (2.22-1) unstable; urgency=low
+
+  * Binutils 2.22 release.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 21 Nov 2011 16:50:53 +0100
+
+binutils (2.21.90.20111025-1) unstable; urgency=low
+
+  * Snapshot, taken from the binutils-2_22-branch 20111025.
+  * Fix lintian warnings.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 25 Oct 2011 15:06:46 +0200
+
+binutils (2.21.90.20111019-3) unstable; urgency=low
+
+  * Fix PR ld/13302, taken from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 23 Oct 2011 13:15:07 +0200
+
+binutils (2.21.90.20111019-2) unstable; urgency=low
+
+  * Fix PR ld/13287, taken from the trunk. LP: #872687.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 20 Oct 2011 12:29:18 +0200
+
+binutils (2.21.90.20111019-1) unstable; urgency=low
+
+  * Snapshot, taken from the binutils-2_22-branch 20111019.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 19 Oct 2011 22:25:05 +0200
+
+binutils (2.21.90.20111004-2) unstable; urgency=low
+
+  * Fix PR ld/13250, preserve the maximum alignment and size for common
+    symbols (H.J. Lu). Closes: #608901. LP: #697229.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 06 Oct 2011 08:06:04 +0200
+
+binutils (2.21.90.20111004-1) unstable; urgency=medium
+
+  * Snapshot, taken from the binutils-2_22-branch 20111004.
+  * Fix PR ld/13195, taken from the trunk. Closes: #643858, #644183.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 04 Oct 2011 12:12:16 +0200
+
+binutils (2.21.53.20110922-1) unstable; urgency=low
+
+  * Snapshot, taken from the binutils-2_22-branch 20110924.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 24 Sep 2011 09:55:38 +0200
+
+binutils (2.21.53.20110910-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110910.
+    - Fix PR gas/13024. Closes: #635592.
+  * Build with proposed patch for PR ld/12965.
+  * Don't ship .la files in the cross binutils packages.
+  * For native builds, add the multiarch directories to the default
+    search path.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 10 Sep 2011 13:06:01 +0200
+
+binutils (2.21.53.20110823-3) unstable; urgency=low
+
+  * Revert the last change:
+    - Default to --hash-style=both in ld.bfd and ld.gold.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 25 Aug 2011 10:48:28 +0200
+
+binutils (2.21.53.20110823-2) unstable; urgency=low
+
+  * Default to --hash-style=both in ld.bfd and ld.gold.
+  * Fix s390x build (Aurelian Jarno). Closes: #635167.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 24 Aug 2011 13:06:48 +0200
+
+binutils (2.21.53.20110823-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110823.
+    - ld --no-copy-dt-needed-entries/--no-add-needed is now the default.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 23 Aug 2011 21:23:38 +0200
+
+binutils (2.21.53.20110805-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110805.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 05 Aug 2011 12:25:49 +0200
+
+binutils (2.21.53.20110729-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110729.
+  * Fix s390x build (Aurelian Jarno). Closes: #635167.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 29 Jul 2011 19:04:46 +0200
+
+binutils (2.21.53.20110720-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110720.
+    - Fix PR ld/12978. Closes: #632681.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 20 Jul 2011 20:54:51 +0200
+
+binutils (2.21.52.20110707-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110707.
+    - Fix build failure on mips/mipsel. Closes: #632690.
+    - Fix issues on kfreebsd-amd64. Closes: #632671.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 07 Jul 2011 06:48:33 +0200
+
+binutils (2.21.52.20110703-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110703.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 03 Jul 2011 21:56:44 +0200
+
+binutils (2.21.52.20110606-2) unstable; urgency=low
+
+  * Fix PR ld/12845, taken from the trunk. Closes: #628685.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 09 Jun 2011 12:45:15 +0200
+
+binutils (2.21.52.20110606-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110606.
+    - Fix PR ld/12833. Closes: #628770.
+    - Fix spelling errors. Closes: #604696.
+  * Let gold accept a dummy -z buildd-<random-string> option.
+  * Add a /usr/share/bug/binutils/presubj file for reportbug (and symlinks
+    from the other /usr/share/bug/binutils-foo directories) explaining how
+    to make a self-contained testcase (Jonathan Nieder). Closes: #629147.
+  * Fix ld crash cause of invalid pointer in munmap_chunk. Closes: #628916.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 07 Jun 2011 00:03:47 +0200
+
+binutils (2.21.51.20110523-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110523.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 23 May 2011 23:38:52 +0200
+
+binutils (2.21.51.20110421-6) unstable; urgency=low
+
+  [ Marcin Juszkiewicz ]
+  * Use pregenerated ld.gold.1 for cross builds.
+
+  [ Matthias Klose ]
+  * Redefine STRIP and install_binary for cross builds (Ken Werner).
+  * Apply fix for PR ld/12726, taken from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 19 May 2011 15:51:22 +0200
+
+binutils (2.21.51.20110421-5) unstable; urgency=medium
+
+  * Use a symlink for /usr/bin/ld, even if gold is not built. Closes: #615262.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 17 May 2011 17:58:17 +0200
+
+binutils (2.21.51.20110421-4) unstable; urgency=low
+
+  * Fix PR ld/12730, taken from the trunk. Closes: #625616.
+  * Cortex A8 workarounds for PLT tail calls (Richard Sandiford).
+
+ -- Matthias Klose <doko@debian.org>  Sun, 08 May 2011 02:06:22 +0200
+
+binutils (2.21.51.20110421-3) unstable; urgency=low
+
+  * Fix segfault in ar, delete_members.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 01 May 2011 17:30:42 +0200
+
+binutils (2.21.51.20110421-2) unstable; urgency=low
+
+  * Fix typo in the patch for PR gas/12698.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 27 Apr 2011 21:33:47 +0200
+
+binutils (2.21.51.20110421-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110421.
+  * Install a man page for ld.gold, generated by help2man. Closes: #619823.
+  * Apply proposed patch for PR gas/12698. Closes: #623964.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 27 Apr 2011 18:14:39 +0200
+
+binutils (2.21.51.20110419-2) unstable; urgency=low
+
+  * Fix powerpcspe and sparc builds.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 19 Apr 2011 13:47:56 +0200
+
+binutils (2.21.51.20110419-1) unstable; urgency=low
+
+  * Snapshot, taken from the trunk 20110419.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 19 Apr 2011 10:18:14 +0200
+
+binutils (2.21.51.20110409-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20110409.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 09 Apr 2011 13:53:24 +0200
+
+binutils (2.21.51.20110403-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20110403.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 03 Apr 2011 23:54:13 +0200
+
+binutils (2.21.0.20110327-3) unstable; urgency=high
+
+  * Fix architecture field for binutils-gold (powerpcspe).
+  * Add support for arm-*-gnueabihf targets. Closes: #621029.
+  * Fix PR ld/12654: Properly handle R_386_TLS_LDO_32 for PIE. LP: #663294.
+  * Fix PR ld/12637, reloc overflow for R_MIPS_TLS_LDM (Richard Sandiford),
+    taken from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 10 Apr 2011 17:23:40 +0200
+
+binutils (2.21.0.20110327-2) unstable; urgency=low
+
+  * Fix architecture field for binutils-gold.
+  * Configure with --disable-werror on armhf.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 29 Mar 2011 19:38:55 +0200
+
+binutils (2.21.0.20110327-1) unstable; urgency=low
+
+  * Update from the 2.21 branch 20110327.
+  * Add multiarch directories to linker search path. Closes: #369064.
+    LP: #738098.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 27 Mar 2011 22:32:57 +0100
+
+binutils (2.21.0.20110322-1) unstable; urgency=low
+
+  * Update from the 2.21 branch 20110322.
+  * S/390: Make as to accept all instructions if no -march option given.
+    taken from the trunk (Aurelian Jarno). Closes: #618751.
+  * Extend support for armhf (Loic Minier).
+    - debian/control.in, debian/control, debian/rules: Enable gold for armhf.
+    - debian/rules: Introduce $(CROSS) (set to $(DEB_HOST_GNU_TYPE)- when
+      cross-building) and call $(CROSS)cpp to check whether -marm is needed or
+      not instead of testing for armel; an alternative would be to
+      unconditionally set -marm if DEB_HOST_ARCH_CPU is arm.
+    - debian/rules: commented out -fno-section-anchors CFLAGS handling would
+      also be enabled for armhf.
+    - debian/rules: ignore regressions on armhf as well; note that
+      ignore_regressions is set three times.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 22 Mar 2011 23:12:39 +0100
+
+binutils (2.21.0.20110302-2) unstable; urgency=low
+
+  [ Carlos O'Donell ]
+  * Fix binutils-hppa64 build.
+
+  [ Matthias Klose ]
+  * Fix PR ld/12376 (John David Anglin), taken from the trunk.
+  * Update to the 2.21 branch, 20110310.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 10 Mar 2011 21:35:07 +0100
+
+binutils (2.21.0.20110302-1) unstable; urgency=low
+
+  * Update from the 2.21 branch.
+
+  [ Thorsten Glaser ]
+  * patches/640_m68k_fix-TLS_GD-relocation: new, temp. Closes: #611768.
+
+  [ Matthias Klose ]
+  * On ppc64, look for 32 bit target libraries in /lib32, /usr/lib32 etc.,
+    first.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 02 Mar 2011 02:41:17 +0100
+
+binutils (2.21.0.20110216-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 22 Feb 2011 20:35:16 +0100
+
+binutils (2.21.0.20110216-1) experimental; urgency=low
+
+  * Update from the 2.21 branch.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 16 Feb 2011 15:54:15 +0100
+
+binutils (2.21-5) experimental; urgency=low
+
+  * Update gold to 1.11, taken from the 2.21 branch.
+  * Add the arm-linux-gnueabi target to binutils-multiarch (Loic Minier).
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 25 Jan 2011 00:51:38 +0100
+
+binutils (2.21-4) experimental; urgency=low
+
+  * Fix handling of writable .eh_frame section in gold, taken from the
+    2.21 branch.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 12 Jan 2011 00:42:15 +0100
+
+binutils (2.21-3) experimental; urgency=low
+
+  [ Matthias Klose ]
+  * Don't include `-system' in the bfd version identifier.
+
+  [ Sedat Dilek ]
+  * 160_pr12327.patch: Fix PR ld/12327, taken from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 29 Dec 2010 23:51:35 +0100
+
+binutils (2.21-2) experimental; urgency=low
+
+  * Don't install ld.bfd in binutils-multiarch.
+  * Fix assembler bug blocking Thumb-2 kernel builds (CS issue #8775).
+
+ -- Matthias Klose <doko@debian.org>  Fri, 10 Dec 2010 13:45:00 +0100
+
+binutils (2.21-1) experimental; urgency=low
+
+  * binutils 2.21 release.
+
+  [ Marcin Juszkiewicz ]
+  * Enable building gold in cross builds. LP: #686530.
+  * Allow to build only the -source package, and include the version
+    in the package name. LP: #682646.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 09 Dec 2010 23:24:49 +0100
+
+binutils (2.20.90.20101121-1) experimental; urgency=low
+
+  * Update from the binutils 2.21 release branch.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 21 Nov 2010 14:03:14 +0100
+
+binutils (2.20.90.20101105-2) experimental; urgency=low
+
+  * binutils 2.21 prerelease 1.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 10 Nov 2010 01:04:59 +0100
+
+binutils (2.20.51.20101028-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20101028.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 28 Oct 2010 16:57:11 +0200
+
+binutils (2.20.51.20101009-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20101009.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 09 Oct 2010 14:41:08 +0200
+
+binutils (2.20.51.20100925-2) experimental; urgency=low
+
   * Allow ar scripts to contain ~ in the filename (Zygmunt Krynicki, taken
     from Linaro). LP: #641488.
 
- -- Matthias Klose <doko@debian.org>  Fri, 17 Sep 2010 23:54:06 +0200
+ -- Matthias Klose <doko@debian.org>  Thu, 30 Sep 2010 10:20:41 +0200
 
-binutils (2.20.1-14) unstable; urgency=low
+binutils (2.20.51.20100925-1) experimental; urgency=low
 
-  * Update ARM attribute support for Tag_DIV_use and Tag_MPextension_use.
-    Closes: #595649.
+  * Snapshot, taken from the trunk 20100925.
+  * Fix PR ld/10144, mips/ld: non-dynamic relocations refer to dynamic symbol
+    Closes: #519006.
 
- -- Matthias Klose <doko@debian.org>  Mon, 06 Sep 2010 09:53:50 +0200
+ -- Matthias Klose <doko@debian.org>  Sat, 25 Sep 2010 16:24:20 +0200
 
-binutils (2.20.1-13) unstable; urgency=low
+binutils (2.20.51.20100908-1) experimental; urgency=low
 
-  * Fix --no-add-needed with weak symbols (Kirill Smelkov). Closes: #591405.
+  * Snapshot, taken from the trunk 20100908.
+  * Link executables statically when `static' is passed in DEB_BUILD_OPTIONS
+    (Jim Heck). Closes: #590101.
+  * Apply proposed patch for PR ld/10340 (ld doesn't honor sysroot prefix
+    for ldscripts). LP: #625320.
+  * Build binutils-hppa64 in cross builds (Al Viro). Closes: #595319.
+  * Fix some lintian warnings.
 
- -- Matthias Klose <doko@debian.org>  Sat, 07 Aug 2010 21:01:40 +0200
+ -- Matthias Klose <doko@debian.org>  Wed, 08 Sep 2010 16:31:47 +0200
 
-binutils (2.20.1-12) unstable; urgency=low
+binutils (2.20.51.20100813-1) experimental; urgency=low
 
-  * Mask a few opcodes away if producing code for e500 (Sebastian Andrzej
-    Siewior). Closes: #586068.
+  * Snapshot, taken from the trunk 20100813.
 
- -- Matthias Klose <doko@debian.org>  Sun, 11 Jul 2010 09:01:28 +0200
+  [ Jonathan Nieder ]
+  * Remove ld.bfd from binutils-multiarch (not that useful without an
+    multiarch assembler).
+
+  [ Marcin Juszkiewicz ]
+  * Revert sysroot to / for cross builds. LP: #598389.
+  * Generate debian/control for native and cross builds. LP: #612629.
+  * Provide packaging rules in -source package. LP: #608745.
+
+  [ Matthias Klose ]
+  * Don't apply patches, when PATCHED_SOURCES is set to `yes'.
+  * Proposed patch for PR11889, readelf crashes for malformed binaries
+    (Dan Rosenberg). LP: #614206.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 13 Aug 2010 11:10:14 +0200
+
+binutils (2.20.51.20100710-2) experimental; urgency=medium
+
+  * Don't use configury for cross builds for native builds. LP: #604134.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 11 Jul 2010 10:24:28 +0200
+
+binutils (2.20.51.20100710-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100710.
+    - Fix PR gas/10531. LP: #599485.
+  * debian/rules: Introduce PF macros (Jim Heck). Closes: #588357.
+
+  [ Marcin Juszkiewicz ]
+  * Don't install documentation files in -cross packages.  Closes: #586636.
+  * Set sysroot to /usr/$(TARGET) for cross builds. LP: #598389.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 10 Jul 2010 10:42:55 +0200
+
+binutils (2.20.51.20100617-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100617.
+  * Merge 'binary-cross' target into 'binary' one (Marcin Juszkiewicz).
+  * debian/copyright: Update to GFDL 1.3.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 17 Jun 2010 15:20:34 +0200
+
+binutils (2.20.51.20100527-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100527.
+
+  [ Jonathan Nieder ]
+  * debian/binutils-multiarch.preinst.in: Re-add diversions on reinstall.
+    Closes: #581156.
+  * Remove c++filt from binutils-multiarch.
+  * Rename /usr/bin/ld from multiarch build to ld.bfd. Closes: #582490.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 27 May 2010 10:40:48 +0200
+
+binutils (2.20.51.20100518-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100518.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 18 May 2010 13:29:45 +0200
+
+binutils (2.20.51.20100428-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100428.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 28 Apr 2010 10:07:28 +0200
+
+binutils (2.20.51.20100418-2) experimental; urgency=low
+
+  * Add upper dependency 
+
+ -- Matthias Klose <doko@debian.org>  Sun, 18 Apr 2010 20:52:41 +0200
+
+binutils (2.20.51.20100418-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100418.
+  * debian/*.shlibs.in: Automate upstream version changes.
+  * Configure native build --with-sysroot=/. Closes: #556126.
+  * Move the ld.gold binary into the binutils package, just keep the
+    diversion (ld) in the binutils-gold package.
+  * Linker selection: ld is used by default, to use the gold linker,
+    pass -fuse-linker-plugin (no other side effects if -flto/-fwhopr
+    is not passed). To force ld.bfd or ld.gold, pass -B/usr/lib/compat-ld
+    for ld.bfd or /usr/lib/gold-ld for ld.gold.
+  * Apply proposed patch for ARM: Add option to disable merging of adjacent
+    exidx unwinder entries.
+
+  [ Jonathan Nieder ]
+  * Clean up diversion handling in binutils-multiarch:
+    - remove diversion of libbfd.a and libopcodes.a.  Closes: #545067.
+    - wait for the new version to be unpacked before removing old diversions
+    - avoid messages from re-adding diversions when upgrading from a version
+      that already has them
+    - remove diversions when downgrading to a version that does not have
+      them (for example, when recovering from an upgrade failure)
+  * Add diversion for ld.bfd in binutils-multiarch.
+  * Update comment in debian/rules to acknowledge that binutils-multiarch
+    includes a linker now.
+  * Add c++filt to binutils-multiarch.
+  * Remove elfedit from binutils-multiarch.
+    Its functionality does not depend on the list of supported targets.
+  * Fixup to version changes handling.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 18 Apr 2010 14:18:59 +0200
+
+binutils (2.20.51.20100405-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100405.
+  * debian/*.shlibs: Update to the version from the trunk.
+  * Mangle the soname of the binutils libraries to be different than
+    the default name. Closes: #557620.
+    Packaged cross builds should do the same.
+  * Add diversion for elfedit in binutils-multiarch (Jonathan Nieder).
+    Closes: #576126.
+  * Convert to quilt (Sedat Dilek).
+  * Update to proposed patch to enable both gold and ld in a single toolchain.
+    The gold binary is now installed as `gold'. Keep the name `ld.gold'.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 05 Apr 2010 14:49:46 +0200
+
+binutils (2.20.51.20100227-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100227.
+  * debian/*.shlibs: Update to the version from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 27 Feb 2010 08:55:05 +0100
+
+binutils (2.20.51.20100222-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100222.
+  * debian/*.shlibs: Update to the version from the trunk.
+  * binutils-dev: Install plugin-api.h.
+  * Ignore testsuite regressions on armel.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 23 Feb 2010 02:27:28 +0100
+
+binutils (2.20.51.20100216-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100216.
+  * debian/*.shlibs: Update to the version from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 16 Feb 2010 17:49:47 +0100
+
+binutils (2.20.51.20100112-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100112.
+  * debian/*.shlibs: Update to the version from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 12 Jan 2010 09:06:51 +0100
+
+binutils (2.20.51.20100109-2) experimental; urgency=low
+
+  * Regenerate ld/configure (includes ld in the binutils package).
+
+ -- Matthias Klose <doko@debian.org>  Mon, 11 Jan 2010 01:48:09 +0100
+
+binutils (2.20.51.20100109-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100109.
+    - PR gold/10980: Support more options available by current GNU ld.
+      Closes: #555886.
+    - Fix PR gold/11072: Discard .gnu_debuglink sections, taken from the trunk.
+      Closes: #563366.
+  * debian/*.shlibs: Update to the version from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 09 Jan 2010 14:32:33 +0100
+
+binutils (2.20.51.20100101-1) experimental; urgency=low
+
+  * Snapshot, taken from the trunk 20100101.
+  * debian/*.shlibs: Update to the version from the trunk.
+  * Remove patches available on the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 01 Jan 2010 18:49:42 +0100
 
 binutils (2.20.1-11) unstable; urgency=medium
 
@@ -1696,7 +2289,7 @@ binutils (2.12.90.0.1-1) unstable; urgency=high
   * Upstream: Fix eh_frame.
   * Upstream: Turn on combreloc by default.
   * Upstream: Enable gprof for Linux/mips.
-  * Turn combreloc off for ARM explicitly until
+  * Turn combreloc off for ARM explicitely until
     I can confirm that PIC is not still broken
     by using it.
   * Remove IA-64 unwind patch and objcopy fix
@@ -2602,7 +3195,7 @@ binutils (2.9.5.0.14-1) unstable; urgency=low
     - Move upstream changelogs to binutils-doc package.
     - Remove standard GNU info files left in /usr/share/info.
     - Call dh_installdocs for all packages.
-  * debian/*{dirs,files}: Remove. Mention explicitly in debian/rules.
+  * debian/*{dirs,files}: Remove. Mention explicitely in debian/rules.
 
  -- Christopher C. Chimelis <chris@classnet.med.miami.edu>  Wed,  6 Oct 1999 03:18:55 -0400
 
