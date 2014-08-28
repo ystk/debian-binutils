@@ -1,6 +1,6 @@
 /* tc-moxie.h -- Header file for tc-moxie.c.
 
-   Copyright 2009 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -19,14 +19,14 @@
    Foundation, 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #define TC_MOXIE 1
+#ifndef TARGET_BYTES_BIG_ENDIAN
 #define TARGET_BYTES_BIG_ENDIAN 1
+#endif
 #define WORKING_DOT_WORD
 
-/* This macro is the BFD target name to use when creating the output
-   file.  This will normally depend upon the `OBJ_FMT' macro.  */
-#define TARGET_FORMAT "elf32-moxie"
-
 /* This macro is the BFD architecture to pass to `bfd_set_arch_mach'.  */
+#define TARGET_FORMAT (target_big_endian ? "elf32-bigmoxie" : "elf32-littlemoxie")
+
 #define TARGET_ARCH bfd_arch_moxie
 
 #define md_undefined_symbol(NAME)           0

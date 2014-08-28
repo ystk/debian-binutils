@@ -1,6 +1,5 @@
 /* Plugin support for BFD.
-   Copyright 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -19,20 +18,56 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
-#include "config.h"
+#include "sysdep.h"
 #include "bfd.h"
 
 #if BFD_SUPPORTS_PLUGINS
 
 #include <assert.h>
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#elif defined (HAVE_WINDOWS_H)
+#include <windows.h>
+#else
+#error Unknown how to handle dynamic-load-libraries.
+#endif
 #include <stdarg.h>
 #include "plugin-api.h"
-#include "sysdep.h"
 #include "plugin.h"
 #include "libbfd.h"
 #include "libiberty.h"
 #include <dirent.h>
+
+#if !defined (HAVE_DLFCN_H) && defined (HAVE_WINDOWS_H)
+
+#define RTLD_NOW 0      /* Dummy value.  */
+
+static void *
+dlopen (const char *file, int mode ATTRIBUTE_UNUSED)
+{
+  return LoadLibrary (file);
+}
+
+static void *
+dlsym (void *handle, const char *name)
+{
+  return GetProcAddress (handle, name);
+}
+
+static int ATTRIBUTE_UNUSED
+dlclose (void *handle)
+{
+  FreeLibrary (handle);
+  return 0;
+}
+
+static const char *
+dlerror (void)
+{
+  return "Unable to load DLL.";
+}
+
+#endif /* !defined (HAVE_DLFCN_H) && defined (HAVE_WINDOWS_H)  */
 
 #define bfd_plugin_close_and_cleanup                  _bfd_generic_close_and_cleanup
 #define bfd_plugin_bfd_free_cached_info               _bfd_generic_bfd_free_cached_info
@@ -57,7 +92,6 @@
 #define bfd_plugin_bfd_get_relocated_section_contents bfd_generic_get_relocated_section_contents
 #define bfd_plugin_bfd_relax_section                  bfd_generic_relax_section
 #define bfd_plugin_bfd_link_hash_table_create         _bfd_generic_link_hash_table_create
-#define bfd_plugin_bfd_link_hash_table_free           _bfd_generic_link_hash_table_free
 #define bfd_plugin_bfd_link_add_symbols               _bfd_generic_link_add_symbols
 #define bfd_plugin_bfd_link_just_syms                 _bfd_generic_link_just_syms
 #define bfd_plugin_bfd_final_link                     _bfd_generic_final_link
@@ -101,7 +135,7 @@ add_symbols (void * handle,
 {
   bfd *abfd = handle;
   struct plugin_data_struct *plugin_data =
-    bfd_alloc (abfd, sizeof (plugin_data_struct));;
+    bfd_alloc (abfd, sizeof (plugin_data_struct));
 
   plugin_data->nsyms = nsyms;
   plugin_data->syms = syms;
@@ -364,7 +398,7 @@ static flagword
 convert_flags (const struct ld_plugin_symbol *sym)
 {
  switch (sym->def)
-   { 
+   {
    case LDPK_DEF:
    case LDPK_COMMON:
    case LDPK_UNDEF:
@@ -396,7 +430,7 @@ bfd_plugin_canonicalize_symtab (bfd *abfd,
 
   for (i = 0; i < nsyms; i++)
     {
-      asymbol *s = bfd_alloc (abfd, sizeof (asymbol)); 
+      asymbol *s = bfd_alloc (abfd, sizeof (asymbol));
 
       BFD_ASSERT (s);
       alocation[i] = s;
