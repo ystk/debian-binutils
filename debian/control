@@ -3,17 +3,25 @@ Section: devel
 Priority: optional
 Maintainer: Matthias Klose <doko@debian.org>
 Uploaders: James Troup <james@nocrew.org>, Daniel Jacobowitz <dan@debian.org>
-Standards-Version: 3.9.3
-Build-Depends: dpkg-dev (>= 1.13.9), autoconf (>= 2.64), bison, flex, gettext, texinfo, dejagnu (>= 1.4.2-1.1), quilt, file, xz-utils, lsb-release, zlib1g-dev
-Vcs-Browser: https://code.launchpad.net/~doko/binutils/pkg-2.22-debian
-Vcs-Bzr: http://bazaar.launchpad.net/~doko/binutils/pkg-2.22-debian
+Standards-Version: 3.9.5
+Build-Depends: autoconf (>= 2.64), dpkg-dev (>= 1.17.11),
+  bison, flex, gettext, texinfo, dejagnu, quilt,
+  python3:any, file, xz-utils, lsb-release, zlib1g-dev
+Vcs-Browser: https://code.launchpad.net/~doko/binutils/pkg-2.25-debian
+Vcs-Bzr: http://bazaar.launchpad.net/~doko/binutils/pkg-2.25-debian
+XS-Testsuite: autopkgtest
 
 Package: binutils
 Architecture: any
 Depends: ${shlibs:Depends}
-Conflicts: gas, elf-binutils, modutils (<< 2.4.19-1), ${extraConflicts}, binutils-gold	(<< 2.20.51.20100415)
-Replaces: binutils-gold (<< 2.20.51.20100415)
-Provides: elf-binutils
+Conflicts: gas, elf-binutils, modutils (<< 2.4.19-1), ${extraConflicts},
+  binutils-gold	(<< 2.20.51.20100415)
+Breaks: binutils-mingw-w64-i686 (<< 2.23.52.20130612-1+3),
+  binutils-mingw-w64-x86-64 (<< 2.23.52.20130612-1+3)
+Replaces: binutils-gold (<< 2.20.51.20100415),
+  binutils-mingw-w64-i686 (<< 2.23.52.20130612-1+3),
+  binutils-mingw-w64-x86-64 (<< 2.23.52.20130612-1+3)
+Provides: elf-binutils, ${gold:Provides}
 Suggests: binutils-doc (>= ${source:Version})
 Description: GNU assembler, linker and binary utilities
  The programs in this package are used to assemble, link and manipulate
@@ -37,28 +45,33 @@ Package: binutils-multiarch
 Architecture: any
 Priority: extra
 Depends: ${shlibs:Depends}, binutils (= ${binary:Version})
-Provides: multiarch-binutils
 Description: Binary utilities that support multi-arch targets
  The programs in this package are used to manipulate binary and object
  files that may have been created on other architectures.  This package
  is primarily for multi-architecture developers and cross-compilers and
  is not needed by normal users or developers.  Note that a cross-assembling
  version of gas is not included in this package, just the binary utilities.
+ .
  NORMAL USERS SHOULD NOT INSTALL THIS PACKAGE.  It's meant only for those
  requiring support for reading info from binaries from other architectures.
 
-Package: binutils-gold
-Architecture: amd64 armel armhf i386 powerpc powerpcspe ppc64 sparc sparc64
+Package: binutils-multiarch-dev
+Architecture: any
 Priority: extra
-Depends: ${shlibs:Depends}, binutils (= ${binary:Version})
-Description: GNU gold linker utility
- Gold is a new linker, which is faster than the current linker included
- in binutils.
+Depends: ${shlibs:Depends},
+ binutils-dev (= ${binary:Version}), binutils-multiarch (= ${binary:Version})
+Replaces: binutils-multiarch (<< 2.24-5)
+Description: GNU binary utilities that support multi-arch targets (BFD development files)
+ This package includes header files, static and shared libraries necessary
+ to build programs which use the GNU BFD library for multi-arch targets,
+ which is part of binutils. Note that building Debian packages which depend
+ on the shared libbfd is Not Allowed.
  .
- This package diverts the GNU linker (ld) with the gold linker.
+ NORMAL USERS SHOULD NOT INSTALL THIS PACKAGE.  It's meant only for those
+ requiring support for reading info from binaries from other architectures.
 
 Package: binutils-hppa64
-Architecture: any
+Architecture: hppa
 Depends: ${shlibs:Depends}, binutils (= ${binary:Version})
 Recommends: libc6-dev
 Suggests: binutils-doc (>= ${source:Version})
@@ -68,22 +81,6 @@ Description: GNU assembler, linker and binary utilities targeted for hppa64-linu
  and various libraries to build programs.
  .
  This package is needed to build an 64-bit kernel for 64-bit hppa machines.
-
-Package: binutils-spu
-Architecture: powerpc ppc64
-Depends: ${shlibs:Depends}, binutils (= ${binary:Version})
-Recommends: libc6-dev
-Conflicts: spu-binutils
-Replaces: spu-binutils
-Provides: spu-binutils
-Suggests: binutils-doc (>= ${source:Version})
-Description: GNU assembler, linker and binary utilities targeted for spu-elf
- The programs in this package are used to assemble, link and manipulate
- binary and object files.  They may be used in conjunction with a compiler
- and various libraries to build programs.
- .
- This package is needed to build programs for Cell Broadband Engine SPU
- processors.
 
 Package: binutils-doc
 Section: doc

@@ -1,0 +1,15 @@
+# DP: #684903, fix srec_scan null dereference.
+
+Index: b/bfd/srec.c
+===================================================================
+--- a/bfd/srec.c
++++ b/bfd/srec.c
+@@ -476,6 +476,8 @@
+ 	      }
+ 
+ 	    check_sum = bytes = HEX (hdr + 1);
++            if (bytes == 0) goto error_return;
++
+ 	    if (bytes * 2 > bufsize)
+ 	      {
+ 		if (buf != NULL)

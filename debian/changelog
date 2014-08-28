@@ -1,24 +1,388 @@
-binutils (2.22-8) unstable; urgency=low
+binutils (2.24.51.20140818-1) unstable; urgency=high
 
-  * Fix PR other/54411: integer overflow in objalloc_alloc.
-    CVE-2012-3509. Closes: #688951.
+  * Snapshot, taken from the trunk 20140818.
+    - Fix GLIBC ifunc breakage on PowerPC64 ELFv2. LP: #1355962.
 
- -- Matthias Klose <doko@debian.org>  Sat, 23 Feb 2013 02:28:11 +0100
+ -- Matthias Klose <doko@debian.org>  Mon, 18 Aug 2014 13:49:01 +0200
 
-binutils (2.22-7.1) unstable; urgency=low
+binutils (2.24.51.20140814-2) unstable; urgency=medium
 
-  * Non-maintainer upload.
-    ACK'd NMU by Matthias. Thank you.
-  * Fix PR binutils/14319. (Closes: #681597)
-    Add patches/pr14319.diff.
+  * Still provide i486-* symlinks.
 
- -- Nobuhiro Iwamatsu <iwamatsu@debian.org>  Sat, 14 Jul 2012 23:31:31 +0900
+ -- Matthias Klose <doko@debian.org>  Sun, 17 Aug 2014 17:06:36 +0200
+
+binutils (2.24.51.20140814-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140814.
+    - Add ld options --push-state and --pop-state.
+  * binutils-hppa64: Set architecture to hppa.
+  * Add aarch64_ilp32-linux-gnu multiarch directories to the search path.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 14 Aug 2014 13:28:40 +0200
+
+binutils (2.24.51.20140807-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140807.
+    - Remove patch for pr14918, integrated upstream.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 07 Aug 2014 11:41:44 +0200
+
+binutils (2.24.51.20140727-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140727.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 27 Jul 2014 15:44:40 +0200
+
+binutils (2.24.51.20140709-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140709.
+    - Fix PR gold/15639, -flto and ld.gold on ARM.
+      Closes: #712189. LP: #1191909.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 09 Jul 2014 19:44:18 +0200
+
+binutils (2.24.51.20140704-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140704.
+  * Build gold for mips* targets.
+  * Update the patch for the mips64el support. Closes: #750566, #753052.
+  * Update patches for the current trunk.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 04 Jul 2014 12:00:05 +0200
+
+binutils (2.24.51.20140617-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140617.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 17 Jun 2014 10:29:20 +0200
+
+binutils (2.24.51.20140604-3) unstable; urgency=medium
+
+  * Update the mips64-default-n64 patch (Yunqiang Su). Closes: #750566.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 07 Jun 2014 13:43:35 +0200
+
+binutils (2.24.51.20140604-2) unstable; urgency=medium
+
+  * Stop applying the mips64-default-n64 patch until it is updated.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 05 Jun 2014 11:20:39 +0200
+
+binutils (2.24.51.20140604-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140604.
+  * Refactor rules for consistent usage of the PF macro (Helmut Grohne).
+
+ -- Matthias Klose <doko@debian.org>  Wed, 04 Jun 2014 13:48:21 +0200
+
+binutils (2.24.51.20140425-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140425.
+  * Refactor rules for consistent usage of the PF macro (Helmut Grohne).
+  * On x86 targets provide gnu-type prefixed binaries with the cpu that GCC
+    is configured for.
+  * 129_multiarch_libpath.patch: Fix to search multiarch dirs, only needed
+    for a minority of packages still using ld directly for linking instead
+    of the recommended use of gcc.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 27 Apr 2014 21:52:56 +0200
+
+binutils (2.24.51.20140411-2) unstable; urgency=medium
+
+  * No-change rebuild to get rid off ftp-master mail storm.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 12 Apr 2014 15:23:31 +0200
+
+binutils (2.24.51.20140411-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140411.
+  * Provide $(DEB_HOST_GNU_TYPE)- prefixed binaries and man pages.
+  * Don't enable the spu targets on powerpc targets anymore.
+  * Build the gold linker on hurd-i386 (Svante Signell). Closes: #744020.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 11 Apr 2014 18:49:22 +0200
+
+binutils (2.24-5) unstable; urgency=medium
+
+  * Update from the 2.24 branch, 20140321.
+  * Stop building the binutils-spu package.
+  * Add a binutils-multiarch-dev package. Closes: #583160
+
+ -- Matthias Klose <doko@debian.org>  Fri, 21 Mar 2014 11:23:40 +0100
+
+binutils (2.24-4) unstable; urgency=medium
+
+  * Update from the 2.24 branch, 20140304.
+  * Update Aarch64 ilp32 linker and libdir names.
+  * Fix relocations for thread local variables on AArch64. Updated patch
+    taken from the trunk.
+  * Enable AArch64 big endian targets for AArch64 builds and for
+    binutils-multiarch.
+  * gas: Add entry for "xgene1" (AArch64).
+  * gas: Remove the alignment limit on AArch64.
+  * Add a Built-Using attribute for for the binutils-cross-* packages.
+    Closes: #738311.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 04 Mar 2014 02:21:00 +0100
+
+binutils (2.24-3) unstable; urgency=medium
+
+  * Update from the 2.24 branch, 20140124.
+  * Display the reference causing a shared library to be needed (taken from
+    the trunk).
+
+ -- Matthias Klose <doko@debian.org>  Fri, 24 Jan 2014 14:39:48 +0100
+
+binutils (2.24-2) unstable; urgency=medium
+
+  * Update from the 2.24 branch, 20131209.
+  * Remove versioned build dependencies which are not needed anymore
+    since 2005.
+  * Drop the ld_system_root patch.
+  * Fix PowerPC64 linking of --just-symbols objects (Alan Modra).
+
+ -- Matthias Klose <doko@debian.org>  Mon, 09 Dec 2013 13:57:43 +0100
+
+binutils (2.24-1) unstable; urgency=low
+
+  * Final upstream release.
+  * ifunc updates for AArch64, taken from the trunk.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 02 Dec 2013 11:21:16 +0200
+
+binutils (2.23.91.20131123-1) unstable; urgency=low
+
+  * New upstream snapshot, taken from the 2.24 branch.
+  * Stop shipping libiberty, now available in libiberty-dev.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 23 Nov 2013 08:27:51 +0100
+
+binutils (2.23.90.20131116-1) unstable; urgency=low
+
+  * New upstream snapshot, taken from the 2.24 branch.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 16 Nov 2013 12:40:28 +0100
+
+binutils (2.23.90.20131017-1) unstable; urgency=low
+
+  * New upstream snapshot, taken from the 2.24 branch.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 17 Oct 2013 14:22:05 +0200
+
+binutils (2.23.90.20130927-1) unstable; urgency=low
+
+  * New upstream snapshot, taken from the 2.24 branch.
+  * Add ifunc support for AArch64.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 27 Sep 2013 14:05:44 +0200
+
+binutils (2.23.52.20130828-1) unstable; urgency=low
+
+  * New upstream snapshot.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 28 Aug 2013 15:22:51 +0200
+
+binutils (2.23.52.20130727-1) unstable; urgency=low
+
+  * New upstream snapshot.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 27 Jul 2013 10:37:11 +0200
+
+binutils (2.23.52.20130722-1) unstable; urgency=low
+
+  * New upstream snapshot.
+    - Fix PR ld/15762, glibc being built without warning sections.
+  * Set the libdir for arm64 to lib, not lib64.
+  * Stop building the binutils-gold package, let binutils provide
+    binutils-gold.  Packages requiring gold should explicity pass
+    -fuse-ld=gold to the compiler, packages requiring the bfd linker
+    should pass -fuse-ld=bfd to the compiler.
+  * Refresh patches.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 22 Jul 2013 21:13:32 +0200
+
+binutils (2.23.52.20130620-1) unstable; urgency=low
+
+  * New upstream snapshot.
+  * Add conflicts with mingw binutils. Closes: #712057, #712063.
+  * Always compare the test results with the ones from the installed binutils.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 20 Jun 2013 12:27:31 +0200
+
+binutils (2.23.52.20130612-1) unstable; urgency=low
+
+  * New upstream snapshot.
+    - Fix issue #15323, redefining weak functions in -flto incrementally-linked
+      executable. Closes: #710936.
+  * Install libiberty.a again in binutils-dev, not installed anymore upstream
+    by default.
+  * Import the autopkg tests from Ubuntu.
+  * Enable i386pep emulation for the x86 builds. Closes: #703463.
+  * Fix typo in ld(1). Closes: #704867.
+  * Add mips64(el) support (YunQiang Su). Closes: #710214.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 12 Jun 2013 11:35:05 +0200
+
+binutils (2.23.52.20130522-1) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 22 May 2013 16:22:04 +0200
+
+binutils (2.23.2-2) experimental; urgency=low
+
+  * Add support for Cortex-A53 / Cortex-A57.
+  * Fix PR gas/14887 and PR gas/14987, gas syntax errors on ARM.
+    LP: #1166628.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 16 Apr 2013 02:21:44 +0200
+
+binutils (2.23.2-1) experimental; urgency=low
+
+  * binutils 2.23.2 release.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 26 Mar 2013 19:58:59 +0100
+
+binutils (2.23.1-1~exp6) experimental; urgency=low
+
+  * Update from the 2.23 branch (20130222).
+  * For cross builds, add the tool libdir to the library search path.
+  * Revert broken patch:
+    - Recognize DEB_TARGET_ARCH for cross builds.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 23 Feb 2013 01:57:30 +0100
+
+binutils (2.23.1-1~exp5) experimental; urgency=low
+
+  * Update from the 2.23 branch (20130213).
+    - AArch64 and PPC updates.
+  * Recognize DEB_TARGET_ARCH for cross builds. Closes: #695595.
+  * Fix srec_scan null dereference (Sang Kil Cha). Closes: #684903.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 13 Feb 2013 12:10:31 +0100
+
+binutils (2.23.1-1~exp4) experimental; urgency=low
+
+  * Fix PR ld/14918: linking with -flto always links in libgcc_s.so.
+    Closes: #650145.
+  * Fix build failure with texinfo 4.14. Closes: #697353.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 05 Jan 2013 14:06:23 +0100
+
+binutils (2.23.1-1~exp3) experimental; urgency=low
+
+  * Update from the 2.23 branch (20121204).
+  * Add fuse-ld= for GCC linker option compatibility in ld and gold.
+  * gold cross builds: Search the multiarch directories too.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 05 Dec 2012 08:35:10 +0100
+
+binutils (2.23.1-1~exp2) experimental; urgency=low
+
+  * Update from the 2.23 branch (20121121).
+    - arm, arm64 and x32 updates.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 21 Nov 2012 13:47:06 +0100
+
+binutils (2.23.1-1~exp1) experimental; urgency=low
+
+  * binutils 2.23.1 release.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 15 Nov 2012 13:50:55 +0100
+
+binutils (2.23-1) experimental; urgency=low
+
+  * Update multi-arch paths for x32 (x86_64-linux-gnux32) (Daniel Schepler).
+    Closes: #692138.
+  * Add new ARM hard-float/soft-float ABI flags for EABI_VER5 (Steve McIntyre).
+  * Silence lintian stupidity about interpreting every string in binaries
+    as text (Emmanuel Fleury). Closes: #661639.
+  * In ld.texi, remove cross reference to BFD internals documentation.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 06 Nov 2012 10:42:37 +0100
+
+binutils (2.23-1) experimental; urgency=low
+
+  * binutils 2.23 release.
+  * Don't include the documents licensed under GFDL with cover texts.
+    Closes: #650504.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 24 Oct 2012 10:29:50 +0200
+
+binutils (2.22.90.20120924-1) experimental; urgency=low
+
+  * New upstream snapshot (taken from the 2.23 branch).
+  * Fix bfd.h, removing the safety inclusion guard.
+  * Fix multilib conflicts of generated values by __WORDSIZE-based expressions.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 24 Sep 2012 18:39:51 +0200
+
+binutils (2.22.90.20120913-2) experimental; urgency=low
+
+  * Undo the reversion of the mips patches, unrelated issue.
+  * Build again with -marm on armhf. Testsuite still not ready for thumb mode.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 15 Sep 2012 03:00:10 +0200
+
+binutils (2.22.90.20120913-1) experimental; urgency=low
+
+  * New upstream snapshot (taken from the 2.23 branch).
+  * Add R_AARCH64_GOT_LD_PREL19 reloc implementation, taken from the trunk.
+  * Revert mips updates.
+    See http://sourceware.org/ml/binutils/2012-09/msg00158.html
+
+ -- Matthias Klose <doko@debian.org>  Thu, 13 Sep 2012 20:35:08 +0200
+
+binutils (2.22.90.20120907-2) experimental; urgency=low
+
+  * Fix build failure on kfreebsd.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 09 Sep 2012 15:41:54 +0200
+
+binutils (2.22.90.20120907-1) experimental; urgency=low
+
+  * New upstream snapshot (taken from the 2.23 branch).
+  * Don't build anymore with -marm on armhf.
+  * Work around `install' limitation not able to pass parameters
+    to the strip command. Closes: #686183.
+  * Generate md5sums file. Closes: #684079.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 08 Sep 2012 13:40:39 +0200
+
+binutils (2.22.90.20120816-2) experimental; urgency=low
+
+  * Some refactoring of debian/rules based on patches from Marcin:
+  * Introduce DEB_TARGET_* macros to unify native and cross builds.
+  * Build the control file as the first step for cross builds.
+  * Try again building without --disable-werror.
+  * Refactor stripping of binaries into a `strip_package' macro.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 21 Aug 2012 15:31:05 +0200
+
+binutils (2.22.90.20120816-1) experimental; urgency=low
+
+  * New upstream snapshot (taken from the 2.23 branch).
+  * Configure for aarch64 and x32 targets.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 16 Aug 2012 13:26:56 +0200
+
+binutils (2.22.90.20120731-1) experimental; urgency=low
+
+  * New upstream snapshot (taken from the 2.23 branch).
+
+ -- Matthias Klose <doko@debian.org>  Tue, 31 Jul 2012 22:20:22 +0200
+
+binutils (2.22.52.20120704-1) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 04 Jul 2012 14:40:01 +0200
 
 binutils (2.22-7) unstable; urgency=low
 
   * Update from the binutils-2_22-branch 20120704.
     - Fix PR ld/13991 and a gold issue on ARM.
-  * Fix strict-alias warning building libiberty/md5.c. Closes: #674831.
+  * Fix warning building libiberty/md5.c. Closes: #674831.
   * Enable x86_64-pep in binutils-multiarch. Closes: #675364.
 
  -- Matthias Klose <doko@debian.org>  Wed, 04 Jul 2012 11:00:14 +0200

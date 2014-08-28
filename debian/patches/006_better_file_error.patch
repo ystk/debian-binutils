@@ -1,9 +1,11 @@
 Author: David Kimdon <dwhedon@gordian.com>
 Description: Specify which filename is causing an error if the filename is a
 directory. (#45832)
+Index: b/bfd/opncls.c
+===================================================================
 --- a/bfd/opncls.c
 +++ b/bfd/opncls.c
-@@ -183,6 +183,13 @@
+@@ -193,6 +193,13 @@
  {
    bfd *nbfd;
    const bfd_target *target_vec;

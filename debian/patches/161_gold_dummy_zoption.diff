@@ -1,8 +1,10 @@
 # DP: let gold accept a dummy -z buildd-<random-string> option.
 
+Index: b/gold/options.h
+===================================================================
 --- a/gold/options.h
 +++ b/gold/options.h
-@@ -1162,6 +1162,9 @@
+@@ -1321,6 +1321,9 @@
    DEFINE_bool_alias(textoff, text, options::DASH_Z, '\0',
  		    N_("Permit relocations in read-only segments (default)"),
  		    NULL, true);
@@ -12,9 +14,11 @@
  
   public:
    typedef options::Dir_list Dir_list;
+Index: b/gold/options.cc
+===================================================================
 --- a/gold/options.cc
 +++ b/gold/options.cc
-@@ -859,6 +859,8 @@
+@@ -897,6 +897,8 @@
      {
        int dummy_i = 0;
        const char* dash_z_arg = *arg;
@@ -22,4 +26,4 @@
 +	  *arg = "buildd";
        retval = parse_long_option(1, arg, true, arg, &dummy_i);
        if (retval == NULL)
-         usage(_("unknown -z option"), dash_z_arg);
+ 	usage(_("unknown -z option"), dash_z_arg);

@@ -1,6 +1,8 @@
+Index: b/binutils/arlex.l
+===================================================================
 --- a/binutils/arlex.l
 +++ b/binutils/arlex.l
-@@ -77,7 +77,7 @@
+@@ -78,7 +78,7 @@
  "("             { return '('; }
  ")"             { return ')'; }
  ","             { return ','; }

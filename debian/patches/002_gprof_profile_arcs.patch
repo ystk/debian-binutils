@@ -1,8 +1,10 @@
 Author: Chris Chimelis <chris@debian.org>
 Description: Add more documentation about profiling and -fprofile-arcs.
+Index: b/gprof/gprof.texi
+===================================================================
 --- a/gprof/gprof.texi
 +++ b/gprof/gprof.texi
-@@ -149,6 +149,10 @@
+@@ -145,6 +145,10 @@
  If more than one profile file is specified, the @code{gprof}
  output shows the sum of the profile information in the given profile files.
  
@@ -13,7 +15,7 @@ Description: Add more documentation about profiling and -fprofile-arcs.
  @code{Gprof} calculates the amount of time spent in each routine.
  Next, these times are propagated along the edges of the call graph.
  Cycles are discovered, and calls into a cycle are made to share the time
-@@ -280,6 +284,11 @@
+@@ -276,6 +280,11 @@
  options.  The same option, @samp{-pg}, alters either compilation or linking
  to do what is necessary for profiling.  Here are examples:
  

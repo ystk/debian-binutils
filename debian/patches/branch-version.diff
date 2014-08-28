@@ -37,10 +37,10 @@ index bc242b9..d31f0d9 100755
  
  
  cat >>confdefs.h <<_ACEOF
-diff --git a/bfd/configure.in b/bfd/configure.in
+diff --git a/bfd/configure.ac b/bfd/configure.ac
 index 435aaaa..9ba3000 100644
---- a/bfd/configure.in
-+++ b/bfd/configure.in
+--- a/bfd/configure.ac
++++ b/bfd/configure.ac
 @@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR([libbfd.c])
  AC_CANONICAL_TARGET
  AC_ISC_POSIX

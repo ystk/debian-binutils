@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Quick'n'dirty regression check for dejagnu testsuites
 # Copyright (C) 2003, 2004, 2005, 2006, 2007  James Troup <james@nocrew.org>
@@ -59,10 +59,10 @@ def read_testsummary(filename):
                 # but I can't think of anything trivial and better off
                 # hand.
 
-                if results.has_key(section):
+                if section in results:
                     extra = 1
                     too_many = 10
-                    while results.has_key(section) and extra < too_many:
+                    while section in results and extra < too_many:
                         section = "%s.%s" % (section, extra)
                         extra += 1
                         if extra >= too_many:
@@ -78,7 +78,7 @@ def read_testsummary(filename):
                 s = line.split(':')
                 state = s[0]
                 test = ':'.join(s[1:]).strip()
-                if results.has_key(test):
+                if test in results:
                     warn("%s/%s is duplicated." % (section, test))
                 results[section][test] = state
                 got_state = 1
@@ -101,8 +101,8 @@ def compare_results(old, new):
     progression_count = 0
     change_count = 0
 
-    for section in new.keys():
-        for test in new[section].keys():
+    for section in list(new.keys()):
+        for test in list(new[section].keys()):
             state = new[section][test]
 
             # Stats pr0n
@@ -117,9 +117,9 @@ def compare_results(old, new):
                 untested_count += 1
 
             # Compare to old
-            if not old.has_key(section):
+            if section not in old:
                 continue
-            if not old[section].has_key(test):
+            if test not in old[section]:
                 continue
             old_state = old[section][test]
             if state == "PASS":
@@ -151,18 +151,18 @@ def compare_results(old, new):
                     warn("[%s] REGRESSION (%s -> %s): %s" % (section, old_state, state, test))
 
     if regression_count:
-        print "%d REGRESSIONS (%.2f%%)." % (regression_count, (float(regression_count)/total_num)*100)
+        print("%d REGRESSIONS (%.2f%%)." % (regression_count, (float(regression_count)/total_num)*100))
     if progression_count:
-        print "%d progressions (%.2f%%)." % (progression_count, (float(progression_count)/total_num)*100)
+        print("%d progressions (%.2f%%)." % (progression_count, (float(progression_count)/total_num)*100))
 
     if change_count:
-        print "%d changes (%.2f%%)." % (change_count, (float(change_count)/total_num)*100)
+        print("%d changes (%.2f%%)." % (change_count, (float(change_count)/total_num)*100))
 
-    print "%d tests: %d pass (%.2f%%), %d fail (%.2f%%), %d xfail (%.2f%%) %d untested (%.2f%%)." \
+    print("%d tests: %d pass (%.2f%%), %d fail (%.2f%%), %d xfail (%.2f%%) %d untested (%.2f%%)." \
           % (total_num, pass_count, (float(pass_count)/total_num)*100,
              fail_count, (float(fail_count)/total_num)*100,
              xfail_count, (float(xfail_count)/total_num)*100,
-             untested_count, (float(untested_count)/total_num)*100)
+             untested_count, (float(untested_count)/total_num)*100))
 
     if regression_count:
         sys.exit(1)
@@ -174,10 +174,10 @@ def compare_multiple(directory, first_version, second_version):
                       "m68k", "mipsel", "powerpc", "s390", "sparc" ]
 
     for arch in architectures:
-        print "*********************************** %s ******************************" % (arch)
+        print("*********************************** %s ******************************" % (arch))
         second_filename = "%s/%s_%s" % (directory, second_version, arch)
         if not os.path.exists(second_filename):
-            print "   -- NOT AVAILABLE --"
+            print("   -- NOT AVAILABLE --")
             continue
 
         new = read_testsummary(second_filename)

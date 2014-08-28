@@ -1,6 +1,8 @@
---- a/ld/configure.in
-+++ b/ld/configure.in
-@@ -38,7 +38,9 @@
+Index: b/ld/configure.ac
+===================================================================
+--- a/ld/configure.ac
++++ b/ld/configure.ac
+@@ -56,7 +56,9 @@
   *) TARGET_SYSTEM_ROOT=$with_sysroot ;;
   esac
  
@@ -10,9 +12,11 @@
   use_sysroot=yes
  
   if test "x$prefix" = xNONE; then
+Index: b/ld/configure
+===================================================================
 --- a/ld/configure
 +++ b/ld/configure
-@@ -4139,7 +4139,9 @@
+@@ -4283,7 +4283,9 @@
   *) TARGET_SYSTEM_ROOT=$with_sysroot ;;
   esac
  
@@ -22,9 +26,11 @@
   use_sysroot=yes
  
   if test "x$prefix" = xNONE; then
+Index: b/ld/ldmain.c
+===================================================================
 --- a/ld/ldmain.c
 +++ b/ld/ldmain.c
-@@ -214,8 +214,8 @@
+@@ -226,8 +226,8 @@
      {
        if (*TARGET_SYSTEM_ROOT == 0)
  	{

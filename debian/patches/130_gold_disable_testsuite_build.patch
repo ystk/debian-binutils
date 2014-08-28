@@ -2,9 +2,11 @@ Author:
 Description: Description: Disable build of gold/testsuite
 Author: Matthias Klose
 Upstream status: local
+Index: b/gold/Makefile.am
+===================================================================
 --- a/gold/Makefile.am
 +++ b/gold/Makefile.am
-@@ -2,7 +2,7 @@
+@@ -19,7 +19,7 @@
  
  AUTOMAKE_OPTIONS = foreign
  
@@ -13,9 +15,11 @@ Upstream status: local
  
  tooldir = $(exec_prefix)/$(target_alias)
  
+Index: b/gold/Makefile.in
+===================================================================
 --- a/gold/Makefile.in
 +++ b/gold/Makefile.in
-@@ -355,7 +355,7 @@
+@@ -406,7 +406,7 @@
  top_builddir = @top_builddir@
  top_srcdir = @top_srcdir@
  AUTOMAKE_OPTIONS = foreign
