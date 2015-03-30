@@ -4339,6 +4339,7 @@ process_section_headers (FILE * file)
 	  printf (_("  [Nr] Name              Type             Address           Offset\n"));
 	  printf (_("       Size              EntSize          Flags  Link  Info  Align\n"));
 	}
+
     }
 
   if (do_section_details)

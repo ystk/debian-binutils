@@ -1,3 +1,11 @@
+binutils (2.20.1-16+deb6u1) squeeze-lts; urgency=high
+
+  * Non-maintainer upload by the Squeeze LTS Team. 
+  * CVE-2014-8484 CVE-2014-8485 CVE-2014-8501 CVE-2014-8502 
+    CVE-2014-8503 CVE-2014-8504 CVE-2014-8737 CVE-2014-8738
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Sat, 28 Mar 2015 15:30:04 +0100
+
 binutils (2.20.1-16) unstable; urgency=low
 
   * Add arm-linux-gnueabi to the multiarch targets, remove the old

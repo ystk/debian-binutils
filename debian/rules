@@ -166,7 +166,8 @@ source_files = $(addprefix $(shell basename $(pwd))/, \
 # clean target #
 ################
 
-clean: unpatch
+#does not really work, do manually -> clean: unpatch
+clean: 
 	$(checkdir)
 	-rm -fr builddir-multi builddir-single builddir-hppa64 builddir-spu
 	-find . -name \*.gmo -o -name \*~ -o -name \*.info ! -name sysroff.info | xargs rm -f
@@ -1024,6 +1025,6 @@ binary:         binary-indep binary-arch
 
 checkroot:
 	$(checkdir)
-        test root = "`whoami`"
+	test root = "`whoami`"
 
 .PHONY: binary binary-arch binary-indep clean checkroot

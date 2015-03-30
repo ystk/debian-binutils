@@ -41,3 +41,12 @@
 200_elflink_%B_fixes
 201_elflink_improve_noaddneeded_errors
 202_elflink_noaddneeded_vs_weak
+300-CVE-2014-8484.diff
+301-CVE-2014-8485.diff
+302-CVE-2014-8501.diff
+303-CVE-2014-8503_8502_8737.diff
+303-CVE-2014-8503_8502_8737-part2.diff
+303-CVE-2014-8503_8502_8737-part3.diff
+303-CVE-2014-8503_8502_8737-part4.diff
+304-CVE-2014-8504.diff
+305-CVE-2014-8738.diff
