@@ -410,9 +410,9 @@ proc ld_simple_link_defsyms {} {
         append flags " --defsym __gccmain=0"
     }
 
-    # Windows targets need __main, prefixed with underscore.
+    # Windows targets need __main, some prefixed with underscore.
     if {[istarget *-*-cygwin* ] || [istarget *-*-mingw*]} {
-        append flags " --defsym ___main=0"
+        append flags " --defsym __main=0 --defsym ___main=0"
     }
 
     # PowerPC EABI code calls __eabi.
@@ -1667,6 +1667,22 @@ proc check_plugin_api_available { } {
 	}
     }
     return $plugin_api_available_saved
+}
+
+# Sets ld_sysroot to the current sysroot (empty if not supported) and
+# returns true if the target ld supports sysroot.
+proc check_sysroot_available { } {
+    global ld_sysroot_available_saved ld ld_sysroot
+    if {![info exists ld_sysroot_available_saved]} {
+	# Check if ld supports --sysroot *other* than empty.
+	set ld_sysroot [string trimright [lindex [remote_exec host $ld "--print-sysroot"] 1]]
+	if { $ld_sysroot == "" } {
+	    set ld_sysroot_available_saved 0
+	} else {
+	    set ld_sysroot_available_saved 1
+	}
+    }
+    return $ld_sysroot_available_saved
 }
 
 # Returns true if the target compiler supports LTO

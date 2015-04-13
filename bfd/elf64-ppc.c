@@ -4805,22 +4805,35 @@ ppc64_elf_add_symbol_hook (bfd *ibfd,
 			   const char **name,
 			   flagword *flags ATTRIBUTE_UNUSED,
 			   asection **sec,
-			   bfd_vma *value ATTRIBUTE_UNUSED)
+			   bfd_vma *value)
 {
-  if ((ibfd->flags & DYNAMIC) == 0
-      && ELF_ST_BIND (isym->st_info) == STB_GNU_UNIQUE)
+  if ((ELF_ST_TYPE (isym->st_info) == STT_GNU_IFUNC
+       || ELF_ST_BIND (isym->st_info) == STB_GNU_UNIQUE)
+      && (ibfd->flags & DYNAMIC) == 0
+      && bfd_get_flavour (info->output_bfd) == bfd_target_elf_flavour)
     elf_tdata (info->output_bfd)->has_gnu_symbols = TRUE;
 
-  if (ELF_ST_TYPE (isym->st_info) == STT_GNU_IFUNC)
+  if (*sec != NULL
+      && strcmp ((*sec)->name, ".opd") == 0)
     {
-      if ((ibfd->flags & DYNAMIC) == 0)
-	elf_tdata (info->output_bfd)->has_gnu_symbols = TRUE;
+      asection *code_sec;
+
+      if (!(ELF_ST_TYPE (isym->st_info) == STT_GNU_IFUNC
+	    || ELF_ST_TYPE (isym->st_info) == STT_FUNC))
+	isym->st_info = ELF_ST_INFO (ELF_ST_BIND (isym->st_info), STT_FUNC);
+
+      /* If the symbol is a function defined in .opd, and the function
+	 code is in a discarded group, let it appear to be undefined.  */
+      if (!info->relocatable
+	  && (*sec)->reloc_count != 0
+	  && opd_entry_value (*sec, *value, &code_sec, NULL,
+			      FALSE) != (bfd_vma) -1
+	  && discarded_section (code_sec))
+	{
+	  *sec = bfd_und_section_ptr;
+	  isym->st_shndx = SHN_UNDEF;
+	}
     }
-  else if (ELF_ST_TYPE (isym->st_info) == STT_FUNC)
-    ;
-  else if (*sec != NULL
-	   && strcmp ((*sec)->name, ".opd") == 0)
-    isym->st_info = ELF_ST_INFO (ELF_ST_BIND (isym->st_info), STT_FUNC);
 
   if ((STO_PPC64_LOCAL_MASK & isym->st_other) != 0)
     {
@@ -4962,6 +4975,45 @@ ppc64_elf_before_check_relocs (bfd *ibfd, struct bfd_link_info *info)
 {
   struct ppc_link_hash_table *htab;
   struct ppc_link_hash_entry **p, *eh;
+  asection *opd = bfd_get_section_by_name (ibfd, ".opd");
+
+  if (opd != NULL && opd->size != 0)
+    {
+      if (abiversion (ibfd) == 0)
+	set_abiversion (ibfd, 1);
+      else if (abiversion (ibfd) == 2)
+	{
+	  info->callbacks->einfo (_("%P: %B .opd not allowed in ABI"
+				    " version %d\n"),
+				  ibfd, abiversion (ibfd));
+	  bfd_set_error (bfd_error_bad_value);
+	  return FALSE;
+	}
+
+      if ((ibfd->flags & DYNAMIC) == 0
+	  && (opd->flags & SEC_RELOC) != 0
+	  && opd->reloc_count != 0
+	  && !bfd_is_abs_section (opd->output_section))
+	{
+	  /* Garbage collection needs some extra help with .opd sections.
+	     We don't want to necessarily keep everything referenced by
+	     relocs in .opd, as that would keep all functions.  Instead,
+	     if we reference an .opd symbol (a function descriptor), we
+	     want to keep the function code symbol's section.  This is
+	     easy for global symbols, but for local syms we need to keep
+	     information about the associated function section.  */
+	  bfd_size_type amt;
+	  asection **opd_sym_map;
+
+	  amt = opd->size * sizeof (*opd_sym_map) / 8;
+	  opd_sym_map = bfd_zalloc (ibfd, amt);
+	  if (opd_sym_map == NULL)
+	    return FALSE;
+	  ppc64_elf_section_data (opd)->u.opd.func_sec = opd_sym_map;
+	  BFD_ASSERT (ppc64_elf_section_data (opd)->sec_type == sec_normal);
+	  ppc64_elf_section_data (opd)->sec_type = sec_opd;
+	}
+    }
 
   if (!is_ppc64_elf (info->output_bfd))
     return TRUE;
@@ -4969,72 +5021,29 @@ ppc64_elf_before_check_relocs (bfd *ibfd, struct bfd_link_info *info)
   if (htab == NULL)
     return FALSE;
 
-  if (is_ppc64_elf (ibfd))
+  /* For input files without an explicit abiversion in e_flags
+     we should have flagged any with symbol st_other bits set
+     as ELFv1 and above flagged those with .opd as ELFv2.
+     Set the output abiversion if not yet set, and for any input
+     still ambiguous, take its abiversion from the output.
+     Differences in ABI are reported later.  */
+  if (abiversion (info->output_bfd) == 0)
+    set_abiversion (info->output_bfd, abiversion (ibfd));
+  else if (abiversion (ibfd) == 0)
+    set_abiversion (ibfd, abiversion (info->output_bfd));
+
+  p = &htab->dot_syms;
+  while ((eh = *p) != NULL)
     {
-      asection *opd = bfd_get_section_by_name (ibfd, ".opd");
-
-      if (opd != NULL && opd->size != 0)
-	{
-	  if (abiversion (ibfd) == 0)
-	    set_abiversion (ibfd, 1);
-	  else if (abiversion (ibfd) == 2)
-	    {
-	      info->callbacks->einfo (_("%P: %B .opd not allowed in ABI"
-					" version %d\n"),
-				      ibfd, abiversion (ibfd));
-	      bfd_set_error (bfd_error_bad_value);
-	      return FALSE;
-	    }
-
-	  if ((ibfd->flags & DYNAMIC) == 0
-	      && (opd->flags & SEC_RELOC) != 0
-	      && opd->reloc_count != 0
-	      && !bfd_is_abs_section (opd->output_section))
-	    {
-	      /* Garbage collection needs some extra help with .opd sections.
-		 We don't want to necessarily keep everything referenced by
-		 relocs in .opd, as that would keep all functions.  Instead,
-		 if we reference an .opd symbol (a function descriptor), we
-		 want to keep the function code symbol's section.  This is
-		 easy for global symbols, but for local syms we need to keep
-		 information about the associated function section.  */
-	      bfd_size_type amt;
-	      asection **opd_sym_map;
-
-	      amt = opd->size * sizeof (*opd_sym_map) / 8;
-	      opd_sym_map = bfd_zalloc (ibfd, amt);
-	      if (opd_sym_map == NULL)
-		return FALSE;
-	      ppc64_elf_section_data (opd)->u.opd.func_sec = opd_sym_map;
-	      BFD_ASSERT (ppc64_elf_section_data (opd)->sec_type == sec_normal);
-	      ppc64_elf_section_data (opd)->sec_type = sec_opd;
-	    }
-	}
-
-      /* For input files without an explicit abiversion in e_flags
-	 we should have flagged any with symbol st_other bits set
-	 as ELFv1 and above flagged those with .opd as ELFv2.
-	 Set the output abiversion if not yet set, and for any input
-	 still ambiguous, take its abiversion from the output.
-	 Differences in ABI are reported later.  */
-      if (abiversion (info->output_bfd) == 0)
-	set_abiversion (info->output_bfd, abiversion (ibfd));
-      else if (abiversion (ibfd) == 0)
-	set_abiversion (ibfd, abiversion (info->output_bfd));
-
-      p = &htab->dot_syms;
-      while ((eh = *p) != NULL)
-	{
-	  *p = NULL;
-	  if (&eh->elf == htab->elf.hgot)
-	    ;
-	  else if (htab->elf.hgot == NULL
-		   && strcmp (eh->elf.root.root.string, ".TOC.") == 0)
-	    htab->elf.hgot = &eh->elf;
-	  else if (!add_symbol_adjust (eh, info))
-	    return FALSE;
-	  p = &eh->u.next_dot_sym;
-	}
+      *p = NULL;
+      if (&eh->elf == htab->elf.hgot)
+	;
+      else if (htab->elf.hgot == NULL
+	       && strcmp (eh->elf.root.root.string, ".TOC.") == 0)
+	htab->elf.hgot = &eh->elf;
+      else if (!add_symbol_adjust (eh, info))
+	return FALSE;
+      p = &eh->u.next_dot_sym;
     }
 
   /* Clear the list for non-ppc64 input files.  */
@@ -5904,7 +5913,8 @@ ppc64_elf_print_private_bfd_data (bfd *abfd, void *ptr)
 }
 
 /* OFFSET in OPD_SEC specifies a function descriptor.  Return the address
-   of the code entry point, and its section.  */
+   of the code entry point, and its section, which must be in the same
+   object as OPD_SEC.  Returns (bfd_vma) -1 on error.  */
 
 static bfd_vma
 opd_entry_value (asection *opd_sec,
@@ -5987,32 +5997,10 @@ opd_entry_value (asection *opd_sec,
 	      && ELF64_R_TYPE ((look + 1)->r_info) == R_PPC64_TOC)
 	    {
 	      unsigned long symndx = ELF64_R_SYM (look->r_info);
-	      asection *sec;
+	      asection *sec = NULL;
 
-	      if (symndx < symtab_hdr->sh_info
-		  || elf_sym_hashes (opd_bfd) == NULL)
-		{
-		  Elf_Internal_Sym *sym;
-
-		  sym = (Elf_Internal_Sym *) symtab_hdr->contents;
-		  if (sym == NULL)
-		    {
-		      size_t symcnt = symtab_hdr->sh_info;
-		      if (elf_sym_hashes (opd_bfd) == NULL)
-			symcnt = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
-		      sym = bfd_elf_get_elf_syms (opd_bfd, symtab_hdr, symcnt,
-						  0, NULL, NULL, NULL);
-		      if (sym == NULL)
-			break;
-		      symtab_hdr->contents = (bfd_byte *) sym;
-		    }
-
-		  sym += symndx;
-		  val = sym->st_value;
-		  sec = bfd_section_from_elf_index (opd_bfd, sym->st_shndx);
-		  BFD_ASSERT ((sec->flags & SEC_MERGE) == 0);
-		}
-	      else
+	      if (symndx >= symtab_hdr->sh_info
+		  && elf_sym_hashes (opd_bfd) != NULL)
 		{
 		  struct elf_link_hash_entry **sym_hashes;
 		  struct elf_link_hash_entry *rh;
@@ -6026,24 +6014,48 @@ opd_entry_value (asection *opd_sec,
 				  || rh->root.type == bfd_link_hash_defweak);
 		      val = rh->root.u.def.value;
 		      sec = rh->root.u.def.section;
+		      if (sec->owner != opd_bfd)
+			{
+			  sec = NULL;
+			  val = (bfd_vma) -1;
+			}
+		    }
+		}
+
+	      if (sec == NULL)
+		{
+		  Elf_Internal_Sym *sym;
+
+		  if (symndx < symtab_hdr->sh_info)
+		    {
+		      sym = (Elf_Internal_Sym *) symtab_hdr->contents;
+		      if (sym == NULL)
+			{
+			  size_t symcnt = symtab_hdr->sh_info;
+			  sym = bfd_elf_get_elf_syms (opd_bfd, symtab_hdr,
+						      symcnt, 0,
+						      NULL, NULL, NULL);
+			  if (sym == NULL)
+			    break;
+			  symtab_hdr->contents = (bfd_byte *) sym;
+			}
+		      sym += symndx;
 		    }
 		  else
 		    {
-		      /* Handle the odd case where we can be called
-			 during bfd_elf_link_add_symbols before the
-			 symbol hashes have been fully populated.  */
-		      Elf_Internal_Sym *sym;
-
-		      sym = bfd_elf_get_elf_syms (opd_bfd, symtab_hdr, 1,
-						  symndx, NULL, NULL, NULL);
+		      sym = bfd_elf_get_elf_syms (opd_bfd, symtab_hdr,
+						  1, symndx,
+						  NULL, NULL, NULL);
 		      if (sym == NULL)
 			break;
-
-		      val = sym->st_value;
-		      sec = bfd_section_from_elf_index (opd_bfd, sym->st_shndx);
-		      free (sym);
 		    }
+		  sec = bfd_section_from_elf_index (opd_bfd, sym->st_shndx);
+		  if (sec == NULL)
+		    break;
+		  BFD_ASSERT ((sec->flags & SEC_MERGE) == 0);
+		  val = sym->st_value;
 		}
+
 	      val += look->r_addend;
 	      if (code_off != NULL)
 		*code_off = val;
@@ -6054,7 +6066,7 @@ opd_entry_value (asection *opd_sec,
 		  else
 		    *code_sec = sec;
 		}
-	      if (sec != NULL && sec->output_section != NULL)
+	      if (sec->output_section != NULL)
 		val += sec->output_section->vma + sec->output_offset;
 	    }
 	  break;
@@ -8331,7 +8343,10 @@ ppc64_elf_tls_optimize (struct bfd_link_info *info)
 		      else
 			value = sym->st_value;
 		      value += rel->r_addend;
-		      BFD_ASSERT (value < toc->size && value % 8 == 0);
+		      if (value % 8 != 0)
+			continue;
+		      BFD_ASSERT (value < toc->size
+				  && toc->output_offset % 8 == 0);
 		      toc_ref_index = (value + toc->output_offset) / 8;
 		      if (r_type == R_PPC64_TLS
 			  || r_type == R_PPC64_TLSGD
@@ -10194,7 +10209,7 @@ plt_stub_pad (struct ppc_link_hash_table *htab,
   bfd_vma stub_off = stub_entry->stub_sec->size;
 
   if (((stub_off + stub_size - 1) & -stub_align) - (stub_off & -stub_align)
-      > (stub_size & -stub_align))
+      > ((stub_size - 1) & -stub_align))
     return stub_align - (stub_off & (stub_align - 1));
   return 0;
 }
@@ -11790,7 +11805,7 @@ group_sections (struct ppc_link_hash_table *htab,
   bfd_boolean suppress_size_errors;
 
   suppress_size_errors = FALSE;
-  stub14_group_size = stub_group_size;
+  stub14_group_size = stub_group_size >> 10;
   if (stub_group_size == 1)
     {
       /* Default values.  */
@@ -11894,7 +11909,8 @@ static const unsigned char glink_eh_frame_cie[] =
   65,					/* RA reg.  */
   1,					/* Augmentation size.  */
   DW_EH_PE_pcrel | DW_EH_PE_sdata4,	/* FDE encoding.  */
-  DW_CFA_def_cfa, 1, 0			/* def_cfa: r1 offset 0.  */
+  DW_CFA_def_cfa, 1, 0,			/* def_cfa: r1 offset 0.  */
+  0, 0, 0, 0
 };
 
 /* Stripping output sections is normally done before dynamic section
@@ -11951,12 +11967,20 @@ ppc64_elf_size_stubs (struct bfd_link_info *info)
 	  /* libanl */
 	  "getaddrinfo_a",
 	  /* libgomp */
+	  "GOMP_parallel",
 	  "GOMP_parallel_start",
+	  "GOMP_parallel_loop_static",
 	  "GOMP_parallel_loop_static_start",
+	  "GOMP_parallel_loop_dynamic",
 	  "GOMP_parallel_loop_dynamic_start",
+	  "GOMP_parallel_loop_guided",
 	  "GOMP_parallel_loop_guided_start",
+	  "GOMP_parallel_loop_runtime",
 	  "GOMP_parallel_loop_runtime_start",
+	  "GOMP_parallel_sections",
 	  "GOMP_parallel_sections_start",
+	  /* libgo */
+	  "__go_go",
 	};
       unsigned i;
 
@@ -12326,7 +12350,7 @@ ppc64_elf_size_stubs (struct bfd_link_info *info)
 	       stub_sec != NULL;
 	       stub_sec = stub_sec->next)
 	    if ((stub_sec->flags & SEC_LINKER_CREATED) == 0)
-	      size += 20;
+	      size += 24;
 	  if (htab->glink != NULL && htab->glink->size != 0)
 	    size += 24;
 	  if (size != 0)
@@ -12364,6 +12388,89 @@ ppc64_elf_size_stubs (struct bfd_link_info *info)
 
       /* Ask the linker to do its stuff.  */
       (*htab->params->layout_sections_again) ();
+    }
+
+  if (htab->glink_eh_frame != NULL
+      && htab->glink_eh_frame->size != 0)
+    {
+      bfd_vma val;
+      bfd_byte *p, *last_fde;
+      size_t last_fde_len, size, align, pad;
+      asection *stub_sec;
+
+      p = bfd_zalloc (htab->glink_eh_frame->owner, htab->glink_eh_frame->size);
+      if (p == NULL)
+	return FALSE;
+      htab->glink_eh_frame->contents = p;
+      last_fde = p;
+
+      memcpy (p, glink_eh_frame_cie, sizeof (glink_eh_frame_cie));
+      /* CIE length (rewrite in case little-endian).  */
+      last_fde_len = sizeof (glink_eh_frame_cie) - 4;
+      bfd_put_32 (htab->elf.dynobj, last_fde_len, p);
+      p += sizeof (glink_eh_frame_cie);
+
+      for (stub_sec = htab->params->stub_bfd->sections;
+	   stub_sec != NULL;
+	   stub_sec = stub_sec->next)
+	if ((stub_sec->flags & SEC_LINKER_CREATED) == 0)
+	  {
+	    last_fde = p;
+	    last_fde_len = 20;
+	    /* FDE length.  */
+	    bfd_put_32 (htab->elf.dynobj, 20, p);
+	    p += 4;
+	    /* CIE pointer.  */
+	    val = p - htab->glink_eh_frame->contents;
+	    bfd_put_32 (htab->elf.dynobj, val, p);
+	    p += 4;
+	    /* Offset to stub section, written later.  */
+	    p += 4;
+	    /* stub section size.  */
+	    bfd_put_32 (htab->elf.dynobj, stub_sec->size, p);
+	    p += 4;
+	    /* Augmentation.  */
+	    p += 1;
+	    /* Pad.  */
+	    p += 7;
+	  }
+      if (htab->glink != NULL && htab->glink->size != 0)
+	{
+	  last_fde = p;
+	  last_fde_len = 20;
+	  /* FDE length.  */
+	  bfd_put_32 (htab->elf.dynobj, 20, p);
+	  p += 4;
+	  /* CIE pointer.  */
+	  val = p - htab->glink_eh_frame->contents;
+	  bfd_put_32 (htab->elf.dynobj, val, p);
+	  p += 4;
+	  /* Offset to .glink, written later.  */
+	  p += 4;
+	  /* .glink size.  */
+	  bfd_put_32 (htab->elf.dynobj, htab->glink->size - 8, p);
+	  p += 4;
+	  /* Augmentation.  */
+	  p += 1;
+
+	  *p++ = DW_CFA_advance_loc + 1;
+	  *p++ = DW_CFA_register;
+	  *p++ = 65;
+	  *p++ = 12;
+	  *p++ = DW_CFA_advance_loc + 4;
+	  *p++ = DW_CFA_restore_extended;
+	  *p++ = 65;
+	}
+      /* Subsume any padding into the last FDE if user .eh_frame
+	 sections are aligned more than glink_eh_frame.  Otherwise any
+	 zero padding will be seen as a terminator.  */
+      size = p - htab->glink_eh_frame->contents;
+      align = 1;
+      align <<= htab->glink_eh_frame->output_section->alignment_power;
+      align -= 1;
+      pad = ((size + align) & ~align) - size;
+      htab->glink_eh_frame->size = size + pad;
+      bfd_put_32 (htab->elf.dynobj, last_fde_len + pad, last_fde);
     }
 
   maybe_strip_output (info, htab->brlt);
@@ -12723,117 +12830,6 @@ ppc64_elf_build_stubs (struct bfd_link_info *info,
 	return FALSE;
     }
 
-  if (htab->glink_eh_frame != NULL
-      && htab->glink_eh_frame->size != 0)
-    {
-      bfd_vma val;
-      bfd_byte *last_fde;
-      size_t last_fde_len, size, align, pad;
-
-      p = bfd_zalloc (htab->glink_eh_frame->owner, htab->glink_eh_frame->size);
-      if (p == NULL)
-	return FALSE;
-      htab->glink_eh_frame->contents = p;
-      last_fde = p;
-
-      htab->glink_eh_frame->rawsize = htab->glink_eh_frame->size;
-
-      memcpy (p, glink_eh_frame_cie, sizeof (glink_eh_frame_cie));
-      /* CIE length (rewrite in case little-endian).  */
-      last_fde_len = sizeof (glink_eh_frame_cie) - 4;
-      bfd_put_32 (htab->elf.dynobj, last_fde_len, p);
-      p += sizeof (glink_eh_frame_cie);
-
-      for (stub_sec = htab->params->stub_bfd->sections;
-	   stub_sec != NULL;
-	   stub_sec = stub_sec->next)
-	if ((stub_sec->flags & SEC_LINKER_CREATED) == 0)
-	  {
-	    last_fde = p;
-	    last_fde_len = 16;
-	    /* FDE length.  */
-	    bfd_put_32 (htab->elf.dynobj, 16, p);
-	    p += 4;
-	    /* CIE pointer.  */
-	    val = p - htab->glink_eh_frame->contents;
-	    bfd_put_32 (htab->elf.dynobj, val, p);
-	    p += 4;
-	    /* Offset to stub section.  */
-	    val = (stub_sec->output_section->vma
-		   + stub_sec->output_offset);
-	    val -= (htab->glink_eh_frame->output_section->vma
-		    + htab->glink_eh_frame->output_offset);
-	    val -= p - htab->glink_eh_frame->contents;
-	    if (val + 0x80000000 > 0xffffffff)
-	      {
-		info->callbacks->einfo
-		  (_("%P: %s offset too large for .eh_frame sdata4 encoding"),
-		   stub_sec->name);
-		return FALSE;
-	      }
-	    bfd_put_32 (htab->elf.dynobj, val, p);
-	    p += 4;
-	    /* stub section size.  */
-	    bfd_put_32 (htab->elf.dynobj, stub_sec->rawsize, p);
-	    p += 4;
-	    /* Augmentation.  */
-	    p += 1;
-	    /* Pad.  */
-	    p += 3;
-	  }
-      if (htab->glink != NULL && htab->glink->size != 0)
-	{
-	  last_fde = p;
-	  last_fde_len = 20;
-	  /* FDE length.  */
-	  bfd_put_32 (htab->elf.dynobj, 20, p);
-	  p += 4;
-	  /* CIE pointer.  */
-	  val = p - htab->glink_eh_frame->contents;
-	  bfd_put_32 (htab->elf.dynobj, val, p);
-	  p += 4;
-	  /* Offset to .glink.  */
-	  val = (htab->glink->output_section->vma
-		 + htab->glink->output_offset
-		 + 8);
-	  val -= (htab->glink_eh_frame->output_section->vma
-		  + htab->glink_eh_frame->output_offset);
-	  val -= p - htab->glink_eh_frame->contents;
-	  if (val + 0x80000000 > 0xffffffff)
-	    {
-	      info->callbacks->einfo
-		(_("%P: %s offset too large for .eh_frame sdata4 encoding"),
-		 htab->glink->name);
-	      return FALSE;
-	    }
-	  bfd_put_32 (htab->elf.dynobj, val, p);
-	  p += 4;
-	  /* .glink size.  */
-	  bfd_put_32 (htab->elf.dynobj, htab->glink->size - 8, p);
-	  p += 4;
-	  /* Augmentation.  */
-	  p += 1;
-
-	  *p++ = DW_CFA_advance_loc + 1;
-	  *p++ = DW_CFA_register;
-	  *p++ = 65;
-	  *p++ = 12;
-	  *p++ = DW_CFA_advance_loc + 4;
-	  *p++ = DW_CFA_restore_extended;
-	  *p++ = 65;
-	}
-      /* Subsume any padding into the last FDE if user .eh_frame
-	 sections are aligned more than glink_eh_frame.  Otherwise any
-	 zero padding will be seen as a terminator.  */
-      size = p - htab->glink_eh_frame->contents;
-      align = 1;
-      align <<= htab->glink_eh_frame->output_section->alignment_power;
-      align -= 1;
-      pad = ((size + align) & ~align) - size;
-      htab->glink_eh_frame->size = size + pad;
-      bfd_put_32 (htab->elf.dynobj, last_fde_len + pad, last_fde);
-    }
-
   /* Build the stubs as directed by the stub hash table.  */
   bfd_hash_traverse (&htab->stub_hash_table, ppc_build_one_stub, info);
 
@@ -12859,6 +12855,9 @@ ppc64_elf_build_stubs (struct bfd_link_info *info,
 	  break;
       }
 
+  /* Note that the glink_eh_frame check here is not only testing that
+     the generated size matched the calculated size but also that
+     bfd_elf_discard_info didn't make any changes to the section.  */
   if (stub_sec != NULL
       || (htab->glink_eh_frame != NULL
 	  && htab->glink_eh_frame->rawsize != htab->glink_eh_frame->size))
@@ -13785,10 +13784,17 @@ ppc64_elf_relocate_section (bfd *output_bfd,
 
 	      if (!can_plt_call)
 		{
-		  info->callbacks->einfo
-		    (_("%P: %H: call to `%T' lacks nop, can't restore toc; "
-		       "recompile with -fPIC\n"),
-		     input_bfd, input_section, rel->r_offset, sym_name);
+		  if (stub_entry->stub_type == ppc_stub_plt_call
+		      || stub_entry->stub_type == ppc_stub_plt_call_r2save)
+		    info->callbacks->einfo
+		      (_("%P: %H: call to `%T' lacks nop, can't restore toc; "
+			 "recompile with -fPIC\n"),
+		       input_bfd, input_section, rel->r_offset, sym_name);
+		  else
+		    info->callbacks->einfo
+		      (_("%P: %H: call to `%T' lacks nop, can't restore toc; "
+			 "(-mcmodel=small toc adjust stub)\n"),
+		       input_bfd, input_section, rel->r_offset, sym_name);
 
 		  bfd_set_error (bfd_error_bad_value);
 		  ret = FALSE;
@@ -15126,13 +15132,81 @@ ppc64_elf_finish_dynamic_sections (bfd *output_bfd,
 				       NULL))
     return FALSE;
 
-
   if (htab->glink_eh_frame != NULL
-      && htab->glink_eh_frame->sec_info_type == SEC_INFO_TYPE_EH_FRAME
-      && !_bfd_elf_write_section_eh_frame (output_bfd, info,
-					   htab->glink_eh_frame,
-					   htab->glink_eh_frame->contents))
-    return FALSE;
+      && htab->glink_eh_frame->size != 0)
+    {
+      bfd_vma val;
+      bfd_byte *p;
+      asection *stub_sec;
+
+      p = htab->glink_eh_frame->contents + sizeof (glink_eh_frame_cie);
+      for (stub_sec = htab->params->stub_bfd->sections;
+	   stub_sec != NULL;
+	   stub_sec = stub_sec->next)
+	if ((stub_sec->flags & SEC_LINKER_CREATED) == 0)
+	  {
+	    /* FDE length.  */
+	    p += 4;
+	    /* CIE pointer.  */
+	    p += 4;
+	    /* Offset to stub section.  */
+	    val = (stub_sec->output_section->vma
+		   + stub_sec->output_offset);
+	    val -= (htab->glink_eh_frame->output_section->vma
+		    + htab->glink_eh_frame->output_offset
+		    + (p - htab->glink_eh_frame->contents));
+	    if (val + 0x80000000 > 0xffffffff)
+	      {
+		info->callbacks->einfo
+		  (_("%P: %s offset too large for .eh_frame sdata4 encoding"),
+		   stub_sec->name);
+		return FALSE;
+	      }
+	    bfd_put_32 (dynobj, val, p);
+	    p += 4;
+	    /* stub section size.  */
+	    p += 4;
+	    /* Augmentation.  */
+	    p += 1;
+	    /* Pad.  */
+	    p += 7;
+	  }
+      if (htab->glink != NULL && htab->glink->size != 0)
+	{
+	  /* FDE length.  */
+	  p += 4;
+	  /* CIE pointer.  */
+	  p += 4;
+	  /* Offset to .glink.  */
+	  val = (htab->glink->output_section->vma
+		 + htab->glink->output_offset
+		 + 8);
+	  val -= (htab->glink_eh_frame->output_section->vma
+		  + htab->glink_eh_frame->output_offset
+		  + (p - htab->glink_eh_frame->contents));
+	  if (val + 0x80000000 > 0xffffffff)
+	    {
+	      info->callbacks->einfo
+		(_("%P: %s offset too large for .eh_frame sdata4 encoding"),
+		 htab->glink->name);
+	      return FALSE;
+	    }
+	  bfd_put_32 (dynobj, val, p);
+	  p += 4;
+	  /* .glink size.  */
+	  p += 4;
+	  /* Augmentation.  */
+	  p += 1;
+	  /* Ops.  */
+	  p += 7;
+	}
+
+      if (htab->glink_eh_frame->sec_info_type == SEC_INFO_TYPE_EH_FRAME
+	  && !_bfd_elf_write_section_eh_frame (output_bfd, info,
+					       htab->glink_eh_frame,
+					       htab->glink_eh_frame->contents))
+	return FALSE;
+    }
 
   /* We need to handle writing out multiple GOT sections ourselves,
      since we didn't add them to DYNOBJ.  We know dynobj is the first

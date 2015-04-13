@@ -328,7 +328,7 @@ case "${targ}" in
     targ_defvec=arm_elf32_le_vec
     targ_selvecs=arm_elf32_be_vec
     ;;
-  armeb-*-elf | arm*b-*-freebsd* | arm*b-*-linux-*)
+  armeb-*-elf | arm*b-*-freebsd* | arm*b-*-linux-* | armeb-*-eabi*)
     targ_defvec=arm_elf32_be_vec
     targ_selvecs=arm_elf32_le_vec
     ;;
@@ -1033,7 +1033,7 @@ case "${targ}" in
     targ_defvec=mips_elf32_trad_le_vec
     targ_selvecs="mips_elf32_trad_be_vec mips_elf32_ntrad_be_vec mips_elf32_ntrad_le_vec mips_elf64_trad_be_vec mips_elf64_trad_le_vec"
     ;;
-  mips*-sde-elf* | mips*-mti-elf*)
+  mips*-sde-elf* | mips*-mti-elf* | mips*-img-elf*)
     targ_defvec=mips_elf32_trad_be_vec
     targ_selvecs="mips_elf32_trad_le_vec mips_elf32_ntrad_be_vec mips_elf32_ntrad_le_vec mips_elf64_trad_be_vec mips_elf64_trad_le_vec"
     ;;
@@ -1177,7 +1177,7 @@ case "${targ}" in
     targ_defvec=or1k_elf32_vec
     ;;
 
-  or1knd-*-elf | or1knd-*-linux* | or1k-*-rtems*)
+  or1knd-*-elf | or1knd-*-linux* | or1knd-*-rtems*)
     targ_defvec=or1k_elf32_vec
     ;;
 

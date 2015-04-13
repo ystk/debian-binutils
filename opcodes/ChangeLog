@@ -1,3 +1,243 @@
+2014-12-23  Tristan Gingold  <gingold@adacore.com>
+
+	* configure: Regenerate.
+
+2014-12-16  Matthew Fortune  <matthew.fortune@imgtec.com>
+
+	* mips-opc.c (mips_builtin_opcodes): Add JALRC alias for
+	JIALC.  Remove the operand from NAL.
+
+2014-11-30  Alan Modra  <amodra@gmail.com>
+
+	* ppc-opc.c (powerpc_opcodes): Make mftb* generate mfspr for
+	power4 and later.
+
+2014-11-28  Alan Modra  <amodra@gmail.com>
+
+	* ppc-opc.c (powerpc_opcodes <mftb>): Don't deprecate for power7.
+	(TB): Delete.
+	(insert_tbr, extract_tbr): Validate tbr number.
+
+2014-11-17  Ilya Tocar  <ilya.tocar@intel.com>
+
+	* i386-dis-evex.c (evex_table): Add vpermi2b, vpermt2b, vpermb,
+	vpmultishiftqb.
+	* i386-dis.c (PREFIX enum): Add PREFIX_EVEX_0F3883, EVEX_W_0F3883_P_2.
+	* i386-gen.c (cpu_flag_init): Add CPU_AVX512VBMI_FLAGS.
+	(cpu_flags): Add CpuAVX512VBMI.
+	* i386-opc.h (enum): Add CpuAVX512VBMI.
+	(i386_cpu_flags): Add cpuavx512vbmi.
+	* i386-opc.tbl: Add vpmadd52luq, vpmultishiftqb, vpermb, vpermi2b,
+	vpermt2b.
+	* i386-init.h: Regenerated.
+	* i386-tbl.h: Likewise.
+
+2014-11-17  Ilya Tocar  <ilya.tocar@intel.com>
+
+	* i386-dis-evex.c (evex_table): Add vpmadd52luq, vpmadd52huq.
+	* i386-dis.c (PREFIX enum): Add PREFIX_EVEX_0F38B4,
+	PREFIX_EVEX_0F38B5.
+	* i386-gen.c (cpu_flag_init): Add CPU_AVX512IFMA_FLAGS.
+	(cpu_flags): Add CpuAVX512IFMA.
+	* i386-opc.h (enum): Add CpuAVX512IFMA.
+	(i386_cpu_flags): Add cpuavx512ifma.
+	* i386-opc.tbl: Add vpmadd52huq, vpmadd52luq.
+	* i386-init.h: Regenerated.
+	* i386-tbl.h: Likewise.
+
+2014-11-17  Ilya Tocar  <ilya.tocar@intel.com>
+
+	* i386-dis.c (PREFIX enum): Add PREFIX_RM_0_0FAE_REG_7.
+	(prefix_table): Add pcommit.
+	* i386-gen.c (cpu_flag_init): Add CPU_PCOMMIT_FLAGS.
+	(cpu_flags): Add CpuPCOMMIT.
+	* i386-opc.h (enum): Add CpuPCOMMIT.
+	(i386_cpu_flags): Add cpupcommit.
+	* i386-opc.tbl: Add pcommit.
+	* i386-init.h: Regenerated.
+	* i386-tbl.h: Likewise.
+
+2014-11-17  Ilya Tocar  <ilya.tocar@intel.com>
+
+	* i386-dis.c (PREFIX enum): Add PREFIX_0FAE_REG_6.
+	(prefix_table): Add clwb.
+	* i386-gen.c (cpu_flag_init): Add CPU_CLWB_FLAGS.
+	(cpu_flags): Add CpuCLWB.
+	* i386-opc.h (enum): Add CpuCLWB.
+	(i386_cpu_flags): Add cpuclwb.
+	* i386-opc.tbl: Add clwb.
+	* i386-init.h: Regenerated.
+	* i386-tbl.h: Likewise.
+
+2014-11-03  Nick Clifton  <nickc@redhat.com>
+
+	* po/fi.po: Updated Finnish translation.
+
+2014-10-29  Nick Clifton  <nickc@redhat.com>
+
+	* po/de.po: Updated German translation.
+
+2014-10-28  Alan Modra  <amodra@gmail.com>
+
+	Apply trunk patches
+	2014-10-21  Jan Beulich  <jbeulich@suse.com>
+	* ppc-opc.c (powerpc_opcodes): Enable msgclr and msgsnd on Power8.
+
+2014-10-15  Tristan Gingold  <gingold@adacore.com>
+
+	* configure: Regenerate.
+
+2014-10-09  Jose E. Marchesi  &lt;jose.marchesi@oracle.com&gt;
+
+	* sparc-opc.c (sparc-opcodes): Remove instructions `chkpt',
+	`commit', `random', `wr r,r,%cps', `wr r,i,%cps' and `rd %cps,r'.
+	Annotate table with HWCAP2 bits.
+	Add instructions xmontmul, xmontsqr, xmpmul.
+	(sparc-opcodes): Add the `mwait',  `wr r,r,%mwait', `wr
+	r,i,%mwait' and `rd %mwait,r' instructions.
+	Add rd/wr instructions for accessing the %mcdper ancillary state
+	register.
+	(sparc-opcodes): Add sparc5/vis4.0 instructions:
+	subxc, subxccc, fpadd8, fpadds8, fpaddus8, fpaddus16, fpcmple8,
+	fpcmpgt8, fpcmpule16, fpcmpugt16, fpcmpule32, fpcmpugt32, fpmax8,
+	fpmax16, fpmax32, fpmaxu8, fpmaxu16, fpmaxu32, fpmin8, fpmin16,
+	fpmin32, fpminu8, fpminu16, fpminu32, fpsub8, fpsubs8, fpsubus8,
+	fpsubus16, and faligndatai.
+	* sparc-dis.c (v9a_asr_reg_names): Add the %mwait (%asr28)
+	ancillary state register to the table.
+	(print_insn_sparc): Handle the %mcdper ancillary state register.
+	(print_insn_sparc): Handle new operand type '}'.
+
+2014-09-22  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* i386-dis.c (MOD_0F20): Removed.
+	(MOD_0F21): Likewise.
+	(MOD_0F22): Likewise.
+	(MOD_0F23): Likewise.
+	(dis386_twobyte): Replace MOD_0F20, MOD_0F21, MOD_0F22 and
+	MOD_0F23 with "movZ".
+	(mod_table): Remove MOD_0F20, MOD_0F21, MOD_0F22 and MOD_0F23.
+	(OP_R): Check mod/rm byte and call OP_E_register.
+
+2014-09-16 Kuan-Lin Chen <kuanlinchentw@gmail.com>
+
+	* nds32-asm.c (nds32_opcodes, operand_fields, keyword_im5_i,
+	keyword_im5_m, keyword_accumulator, keyword_aridx, keyword_aridx2,
+	keyword_aridxi): Add audio ISA extension.
+	(keyword_gpr, keyword_usr, keyword_sr, keyword_cp, keyword_cpr,
+	keyword_fsr, keyword_fdr, keyword_abdim, keyword_abm, keyword_dpref_st,
+	keyword_cctl_lv, keyword_standby_st, keyword_msync_st): Adjust scrope
+	for nds32-dis.c using.
+	(build_opcode_syntax): Remove dead code.
+	(parse_re, parse_a30b20, parse_rt21, parse_rte_start, parse_rte_end,
+	parse_rte69_start, parse_rte69_end, parse_im5_ip, parse_im5_mr,
+	parse_im6_ip, parse_im6_iq, parse_im6_mr, parse_im6_ms): Add audio ISA
+	operand parser.
+	* nds32-asm.h: Declare.
+	* nds32-dis.c: Use array nds32_opcodes to disassemble instead of
+	decoding by switch.
+
+2014-09-15  Andrew Bennett  <andrew.bennett@imgtec.com>
+	    Matthew Fortune  <matthew.fortune@imgtec.com>
+
+	* mips-dis.c (mips_arch_choices): Add entries for mips32r6 and
+	mips64r6.
+	(parse_mips_dis_option): Allow MSA and virtualization support for
+	mips64r6.
+	(mips_print_arg_state): Add fields dest_regno and seen_dest.
+	(mips_seen_register): New function.
+	(print_insn_arg): Refactored code to use mips_seen_register
+	function.  Add support for OP_SAME_RS_RT, OP_CHECK_PREV and
+	OP_NON_ZERO_REG.  Changed OP_REPEAT_DEST_REG case to print out
+	the register rather than aborting.
+	(print_insn_args): Add length argument.  Add code to correctly
+	calculate the instruction address for pc relative instructions.
+	(validate_insn_args): New static function.
+	(print_insn_mips): Prevent jalx disassembling for r6.  Use
+	validate_insn_args.
+	(print_insn_micromips): Use validate_insn_args.
+	all the arguments are valid.
+	* mips-formats.h (PREV_CHECK): New define.
+	* mips-opc.c (decode_mips_operand): Add support for -a, -b, -d, -s,
+	-t, -u, -v, -w, -x, -y, -A, -B, +I, +O, +R, +:, +\, +", +;
+	(RD_pc): New define.
+	(FS): New define.
+	(I37): New define.
+	(I69): New define.
+	(mips_builtin_opcodes): Add MIPS R6 instructions.  Exclude recoded
+	MIPS R6 instructions from MIPS R2 instructions.
+
+2014-09-10  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* i386-dis.c (dis386): Replace "P" with "%LP" for iret and sysret.
+	(putop): Handle "%LP".
+
+2014-09-03  Jiong Wang  <jiong.wang@arm.com>
+
+	* aarch64-tbl.h (aarch64_opcode_table): Update encoding for mrs/msr.
+	* aarch64-dis-2.c: Update auto-generated file.
+
+2014-09-03  Jiong Wang  <jiong.wang@arm.com>
+
+	* aarch64-tbl.h (QL_R4NIL): New qualifiers.
+	(aarch64_feature_lse): New feature added.
+	(LSE): New Added.
+	(aarch64_opcode_table): New LSE instructions added.  Improve
+	descriptions for ldarb/ldarh/ldar.
+	(aarch64_opcode_table): Describe PAIRREG.
+	* aarch64-opc.h (aarch64_field_kind): Add FLD_lse_sz.
+	* aarch64-opc.c (fields): Add entry for F_LSE_SZ.
+	(aarch64_print_operand): Recognize PAIRREG.
+	(operand_general_constraint_met_p): Check reg pair constraints for CASP
+	instructions.
+	* aarch64-dis.c (aarch64_ext_regno_pair): New extractor for paired reg.
+	(do_special_decoding): Recognize F_LSE_SZ.
+	* aarch64-asm.c (do_special_encoding): Recognize F_LSE_SZ.
+
+2014-08-26  Maciej W. Rozycki  <macro@codesourcery.com>
+
+	* micromips-opc.c (decode_micromips_operand): Rename `B' to `+J'.
+	(micromips_opcodes): Use "+J" in place of "B" for "hypcall",
+	"sdbbp", "syscall" and "wait".
+
+2014-08-21  Nathan Sidwell  <nathan@codesourcery.com>
+	    Maciej W. Rozycki  <macro@codesourcery.com>
+
+	* arm-dis.c (print_arm_address): Negate the GPR-relative offset
+	returned if the U bit is set.
+
+2014-08-21  Maciej W. Rozycki  <macro@codesourcery.com>
+
+	* micromips-opc.c (micromips_opcodes): Remove #ifdef-ed out
+	48-bit "li" encoding.
+
+2014-08-19  Andreas Arnez  <arnez@linux.vnet.ibm.com>
+
+	* s390-dis.c (s390_insn_length, s390_insn_matches_opcode)
+	(s390_print_insn_with_opcode, opcode_mask_more_specific): New
+	static functions, code was moved from...
+	(print_insn_s390): ...here.
+	(s390_extract_operand): Adjust comment.  Change type of first
+	parameter from 'unsigned char *' to 'const bfd_byte *'.
+	(union operand_value): New.
+	(s390_extract_operand): Change return type to union operand_value.
+	Also avoid integer overflow in sign-extension.
+	(s390_print_insn_with_opcode): Adjust to changed return value from
+	s390_extract_operand().  Change "%i" printf format to "%u" for
+	unsigned values.
+	(init_disasm): Simplify initialization of opc_index[].  This also
+	fixes an access after the last element of s390_opcodes[].
+	(print_insn_s390): Simplify the opcode search loop.
+	Check architecture mask against all searched opcodes, not just the
+	first matching one.
+	(s390_print_insn_with_opcode): Drop function pointer dereferences
+	without effect.
+	(print_insn_s390): Likewise.
+	(s390_insn_length): Simplify formula for return value.
+	(s390_print_insn_with_opcode): Avoid special handling for the
+	separator before the first operand.  Use new local variable
+	'flags' in place of 'operand->flags'.
+
 2014-08-14  Mike Frysinger  <vapier@gentoo.org>
 
 	* bfin-dis.c (struct private): Change int's to bfd_boolean's.

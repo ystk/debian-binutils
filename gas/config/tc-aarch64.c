@@ -3333,19 +3333,13 @@ parse_sys_reg (char **str, struct hash_control *sys_regs, int imple_defined_p)
 	return PARSE_FAIL;
       else
 	{
-	  /* Parse S<op0>_<op1>_<Cn>_<Cm>_<op2>, the implementation defined
-	     registers.  */
+	  /* Parse S<op0>_<op1>_<Cn>_<Cm>_<op2>.  */
 	  unsigned int op0, op1, cn, cm, op2;
-	  if (sscanf (buf, "s%u_%u_c%u_c%u_%u", &op0, &op1, &cn, &cm, &op2) != 5)
+
+	  if (sscanf (buf, "s%u_%u_c%u_c%u_%u", &op0, &op1, &cn, &cm, &op2)
+	      != 5)
 	    return PARSE_FAIL;
-	  /* The architecture specifies the encoding space for implementation
-	     defined registers as:
-	     op0  op1  CRn   CRm   op2
-	     1x   xxx  1x11  xxxx  xxx
-	     For convenience GAS accepts a wider encoding space, as follows:
-	     op0  op1  CRn   CRm   op2
-	     1x   xxx  xxxx  xxxx  xxx  */
-	  if ((op0 != 2 && op0 != 3) || op1 > 7 || cn > 15 || cm > 15 || op2 > 7)
+	  if (op0 > 3 || op1 > 7 || cn > 15 || cm > 15 || op2 > 7)
 	    return PARSE_FAIL;
 	  value = (op0 << 14) | (op1 << 11) | (cn << 7) | (cm << 3) | op2;
 	}
@@ -4645,6 +4639,7 @@ parse_operands (char *str, const aarch64_opcode *opcode)
 	case AARCH64_OPND_Rs:
 	case AARCH64_OPND_Ra:
 	case AARCH64_OPND_Rt_SYS:
+	case AARCH64_OPND_PAIRREG:
 	  po_int_reg_or_fail (1, 0);
 	  break;
 
@@ -5828,7 +5823,24 @@ md_section_align (segT segment ATTRIBUTE_UNUSED, valueT size)
 }
 
 /* This is called from HANDLE_ALIGN in write.c.	 Fill in the contents
-   of an rs_align_code fragment.  */
+   of an rs_align_code fragment.
+
+   Here we fill the frag with the appropriate info for padding the
+   output stream.  The resulting frag will consist of a fixed (fr_fix)
+   and of a repeating (fr_var) part.
+
+   The fixed content is always emitted before the repeating content and
+   these two parts are used as follows in constructing the output:
+   - the fixed part will be used to align to a valid instruction word
+     boundary, in case that we start at a misaligned address; as no
+     executable instruction can live at the misaligned location, we
+     simply fill with zeros;
+   - the variable part will be used to cover the remaining padding and
+     we fill using the AArch64 NOP instruction.
+
+   Note that the size of a RS_ALIGN_CODE fragment is always 7 to provide
+   enough storage space for up to 3 bytes for padding the back to a valid
+   instruction alignment and exactly 4 bytes to store the NOP pattern.  */
 
 void
 aarch64_handle_align (fragS * fragP)
@@ -5839,69 +5851,33 @@ aarch64_handle_align (fragS * fragP)
 
   int bytes, fix, noop_size;
   char *p;
-  const char *noop;
 
   if (fragP->fr_type != rs_align_code)
     return;
 
   bytes = fragP->fr_next->fr_address - fragP->fr_address - fragP->fr_fix;
   p = fragP->fr_literal + fragP->fr_fix;
-  fix = 0;
-
-  if (bytes > MAX_MEM_FOR_RS_ALIGN_CODE)
-    bytes &= MAX_MEM_FOR_RS_ALIGN_CODE;
 
 #ifdef OBJ_ELF
   gas_assert (fragP->tc_frag_data.recorded);
 #endif
 
-  noop = aarch64_noop;
   noop_size = sizeof (aarch64_noop);
-  fragP->fr_var = noop_size;
 
-  if (bytes & (noop_size - 1))
+  fix = bytes & (noop_size - 1);
+  if (fix)
     {
-      fix = bytes & (noop_size - 1);
 #ifdef OBJ_ELF
       insert_data_mapping_symbol (MAP_INSN, fragP->fr_fix, fragP, fix);
 #endif
       memset (p, 0, fix);
       p += fix;
-      bytes -= fix;
+      fragP->fr_fix += fix;
     }
 
-  while (bytes >= noop_size)
-    {
-      memcpy (p, noop, noop_size);
-      p += noop_size;
-      bytes -= noop_size;
-      fix += noop_size;
-    }
-
-  fragP->fr_fix += fix;
-}
-
-/* Called from md_do_align.  Used to create an alignment
-   frag in a code section.  */
-
-void
-aarch64_frag_align_code (int n, int max)
-{
-  char *p;
-
-  /* We assume that there will never be a requirement
-     to support alignments greater than x bytes.  */
-  if (max > MAX_MEM_FOR_RS_ALIGN_CODE)
-    as_fatal (_
-	      ("alignments greater than %d bytes not supported in .text sections"),
-	      MAX_MEM_FOR_RS_ALIGN_CODE + 1);
-
-  p = frag_var (rs_align_code,
-		MAX_MEM_FOR_RS_ALIGN_CODE,
-		1,
-		(relax_substateT) max,
-		(symbolS *) NULL, (offsetT) n, (char *) NULL);
-  *p = 0;
+  if (noop_size)
+    memcpy (p, aarch64_noop, noop_size);
+  fragP->fr_var = noop_size;
 }
 
 /* Perform target specific initialisation of a frag.
@@ -5966,12 +5942,15 @@ tc_aarch64_regname_to_dw2regnum (char *regname)
     case REG_TYPE_SP_64:
     case REG_TYPE_R_32:
     case REG_TYPE_R_64:
+      return reg->number;
+
     case REG_TYPE_FP_B:
     case REG_TYPE_FP_H:
     case REG_TYPE_FP_S:
     case REG_TYPE_FP_D:
     case REG_TYPE_FP_Q:
-      return reg->number;
+      return reg->number + 64;
+
     default:
       break;
     }
@@ -7201,9 +7180,17 @@ struct aarch64_cpu_option_table
    recognized by GCC.  */
 static const struct aarch64_cpu_option_table aarch64_cpus[] = {
   {"all", AARCH64_ANY, NULL},
-  {"cortex-a53",	AARCH64_ARCH_V8, "Cortex-A53"},
-  {"cortex-a57",	AARCH64_ARCH_V8, "Cortex-A57"},
+  {"cortex-a53", AARCH64_FEATURE(AARCH64_ARCH_V8,
+				 AARCH64_FEATURE_CRC), "Cortex-A53"},
+  {"cortex-a57", AARCH64_FEATURE(AARCH64_ARCH_V8,
+				 AARCH64_FEATURE_CRC), "Cortex-A57"},
+  /* The 'xgene-1' name is an older name for 'xgene1', which was used
+     in earlier releases and is superseded by 'xgene1' in all
+     tools.  */
   {"xgene-1", AARCH64_ARCH_V8, "APM X-Gene 1"},
+  {"xgene1", AARCH64_ARCH_V8, "APM X-Gene 1"},
+  {"xgene2", AARCH64_FEATURE(AARCH64_ARCH_V8,
+			     AARCH64_FEATURE_CRC), "APM X-Gene 2"},
   {"generic", AARCH64_ARCH_V8, NULL},
 
   /* These two are example CPUs supported in GCC, once we have real
@@ -7239,6 +7226,7 @@ static const struct aarch64_option_cpu_value_table aarch64_features[] = {
   {"crc",		AARCH64_FEATURE (AARCH64_FEATURE_CRC, 0)},
   {"crypto",		AARCH64_FEATURE (AARCH64_FEATURE_CRYPTO, 0)},
   {"fp",		AARCH64_FEATURE (AARCH64_FEATURE_FP, 0)},
+  {"lse",		AARCH64_FEATURE (AARCH64_FEATURE_LSE, 0)},
   {"simd",		AARCH64_FEATURE (AARCH64_FEATURE_SIMD, 0)},
   {NULL,		AARCH64_ARCH_NONE}
 };
