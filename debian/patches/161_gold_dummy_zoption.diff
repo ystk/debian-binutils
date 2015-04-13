@@ -4,7 +4,7 @@ Index: b/gold/options.h
 ===================================================================
 --- a/gold/options.h
 +++ b/gold/options.h
-@@ -1321,6 +1321,9 @@
+@@ -1323,6 +1323,9 @@ class General_options
    DEFINE_bool_alias(textoff, text, options::DASH_Z, '\0',
  		    N_("Permit relocations in read-only segments (default)"),
  		    NULL, true);
@@ -18,7 +18,7 @@ Index: b/gold/options.cc
 ===================================================================
 --- a/gold/options.cc
 +++ b/gold/options.cc
-@@ -897,6 +897,8 @@
+@@ -897,6 +897,8 @@ parse_short_option(int argc, const char*
      {
        int dummy_i = 0;
        const char* dash_z_arg = *arg;

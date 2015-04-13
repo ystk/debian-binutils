@@ -1,3 +1,169 @@
+binutils (2.25-5) unstable; urgency=medium
+
+  * Remove '*.rej' files in the source package. Closes: #775679.
+  * Make the package build reproducibly (addresses: #774429):
+    - Fix mtimes before building binary packages.
+    - Stop recording the current time when creating gzip files.
+    - Sort file list in md5sums.
+    - Fix mtimes before building source tarball.
+    - Sort file list in binutils source tarball.
+    - If available, call strip-nondeterminism on static libraries.
+  * Fix PR ld/17827 - PIE copy relocations are broken with pointers.
+    Closes: #772958.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 25 Feb 2015 09:00:51 +0100
+
+binutils (2.25-4) unstable; urgency=medium
+
+  * Backport fixes for PR binutils/17531 up to 2014-12-22.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 15 Jan 2015 08:00:07 +0100
+
+binutils (2.25-3) unstable; urgency=medium
+
+  * Don't build as a release candidate, fixing the upper shlibs dependency.
+  * Refresh patches.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 25 Dec 2014 13:45:39 +0100
+
+binutils (2.25-2) unstable; urgency=medium
+
+  * Apply proposed patch for PR ld/17742 (don't create .eh_frame_hdr
+    on shared lib bfd).
+
+ -- Matthias Klose <doko@debian.org>  Thu, 25 Dec 2014 06:55:02 +0100
+
+binutils (2.25-1) unstable; urgency=medium
+
+  * binutils 2.25 release.
+    - MIPS specific gas update.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 25 Dec 2014 05:49:55 +0100
+
+binutils (2.24.90.20141219-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141219.
+    - Fix PR ld/17713 (segfault), PR ld/17689 (link error), PR ld/15228.
+  * Apply proposed patch for PR gold/17729 (fixing ~600 GCC test failures).
+
+ -- Matthias Klose <doko@debian.org>  Fri, 19 Dec 2014 18:59:30 +0100
+
+binutils (2.24.90.20141209-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141209.
+    - Fix PR binutils/17677, PR gold/17670 (powerpc),
+      PR gold/17566 (powerpc).
+
+ -- Matthias Klose <doko@debian.org>  Tue, 09 Dec 2014 09:31:53 +0100
+
+binutils (2.24.90.20141201-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141201.
+    - Fix PR ld/16452, PR/ld/16457: Don't output symbol version
+      requirement for non-DT_NEEDED libs. Closes: #728529.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 01 Dec 2014 21:53:10 +0100
+
+binutils (2.24.90.20141128-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141128.
+    - gold: Fix corrupted .eh_frame section with LTO and --gc-sections.
+    - gold: Fix PowerPC relaxation corner case.
+  * Relax upper shlibs version dependency to the next release candidate.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 28 Nov 2014 14:20:09 +0100
+
+binutils (2.24.90.20141124-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141124.
+    - ppc alignment fixes, Go fixes
+    - PR binutils/17597, PR binutils/17512, PR binutils/17521, PR binutils/17533,
+      trunk backports for fixing the recent CVE issues.
+    - One more fix for Cortex-A53 Erratum 835769 (AArch64).
+
+ -- Matthias Klose <doko@debian.org>  Mon, 24 Nov 2014 17:29:27 +0100
+
+binutils (2.24.90.20141111-2) unstable; urgency=medium
+
+  * Fix ld -r abort in _bfd_elf_write_section_eh_frame, taken from the trunk.
+    Closes: #769067.
+
+ -- Matthias Klose <doko@debian.org.org>  Tue, 11 Nov 2014 11:10:27 +0100
+
+binutils (2.24.90.20141111-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141111.
+    - Update .MIPS.abiflags to support MIPS R6.
+  * gold: Misc updates for the AArch64 backend, taken from the trunk.
+  * Mention some CVE issues, fixed in the 20141104 snapshot:
+    - CVE-2014-8484 (PR binutils/17509).
+    - CVE-2014-8485, CVE-2014-8504 (PR binutils/17510).
+    - CVE-2014-8501, CVE-2014-8502, CVE-2014-8503 (PR binutils/17512).
+  * Fix some lintian warnings.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 11 Nov 2014 07:55:51 +0100
+
+binutils (2.24.90.20141104-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141104.
+    - Fix PR bfd/17481.
+    - Fix PR17488, powerpc64-linux-ld segfault. LP: #1381580.
+    - Fix PR ld/17492. LP: #882353.
+    - Fix PR gas/17493. LP: #1051156.
+    - Add gcc-4.9 libgomp symbols requiring --plt-thread-safe for power7.
+    - PowerPC64 ELFv1 function symbol definition vs LTO and discarded sections.
+    - ppc: enable msgclr and msgsnd on Power8.
+    - Relax ppc64_elf_tls_optimize assertion.
+  * Pick patch from the trunk:
+    - Support relexation for the gold aarch64 backend.
+    - AArch64: move bogus assertion.
+    - Fix build configured with --enable-targets=aarch64-linux.
+    - Fix running ld-unique tests on ARM.
+    - gas: Recognize: AArch64 ThunderX processor.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 04 Nov 2014 02:14:45 +0100
+
+binutils (2.24.90.20141014-1) unstable; urgency=medium
+
+  * Snapshot, taken from the 2.25 branch 20141014.
+  * Remove patches picked from upstream.
+  * Build gold on AArch64.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 14 Oct 2014 12:46:08 +0200
+
+binutils (2.24.51.20141001-4) unstable; urgency=high
+
+  * Fix PR ld/17647, taken from upstream. Closes: #764573.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 13 Oct 2014 20:03:30 +0200
+
+binutils (2.24.51.20141001-3) unstable; urgency=medium
+
+  * Fix PR ld/17447, taken from upstream. LP: #1371636.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 07 Oct 2014 12:26:24 +0200
+
+binutils (2.24.51.20141001-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20141001.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 01 Oct 2014 02:32:06 +0200
+
+binutils (2.24.51.20140918-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140918.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 18 Sep 2014 19:28:16 +0200
+
+binutils (2.24.51.20140903-1) unstable; urgency=medium
+
+  * Snapshot, taken from the trunk 20140903.
+  * Try to work around binutils-multiarch build failure on sh4 by disabling
+    hppa targets for the binutils-multiarch build. Addresses: #758830.
+  * Enable powerpc targets for ppc64el. Closes: #760395.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 03 Sep 2014 23:02:26 +0200
+
 binutils (2.24.51.20140818-1) unstable; urgency=high
 
   * Snapshot, taken from the trunk 20140818.

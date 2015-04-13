@@ -2,7 +2,7 @@ Index: b/bfd/config.bfd
 ===================================================================
 --- a/bfd/config.bfd
 +++ b/bfd/config.bfd
-@@ -1058,6 +1058,16 @@ case "${targ}" in
+@@ -1061,6 +1061,16 @@ case "${targ}" in
      targ_defvec=mips_elf32_be_vec
      targ_selvecs="mips_elf32_le_vec mips_elf64_be_vec mips_elf64_le_vec mips_ecoff_be_vec mips_ecoff_le_vec"
      ;;
@@ -23,7 +23,7 @@ Index: b/gas/configure.ac
 ===================================================================
 --- a/gas/configure.ac
 +++ b/gas/configure.ac
-@@ -276,6 +276,9 @@ changequote([,])dnl
+@@ -287,6 +287,9 @@ changequote([,])dnl
  	esac
  	# Decide which ABI to target by default.
  	case ${target} in
@@ -37,7 +37,7 @@ Index: b/ld/configure.tgt
 ===================================================================
 --- a/ld/configure.tgt
 +++ b/ld/configure.tgt
-@@ -473,6 +473,12 @@ mips*el-*-vxworks*)	targ_emul=elf32elmip
+@@ -476,6 +476,12 @@ mips*el-*-vxworks*)	targ_emul=elf32elmip
  mips*-*-vxworks*)	targ_emul=elf32ebmipvxworks
  		        targ_extra_emuls="elf32elmipvxworks" ;;
  mips*-*-windiss)	targ_emul=elf32mipswindiss ;;
@@ -54,7 +54,7 @@ Index: b/gas/configure
 ===================================================================
 --- a/gas/configure
 +++ b/gas/configure
-@@ -12099,6 +12099,9 @@ _ACEOF
+@@ -12197,6 +12197,9 @@ _ACEOF
  	esac
  	# Decide which ABI to target by default.
  	case ${target} in

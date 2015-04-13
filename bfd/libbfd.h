@@ -404,8 +404,13 @@ extern bfd_boolean _bfd_vms_lib_ia64_mkarchive (bfd *abfd);
 #define _bfd_nosymbols_get_lineno \
   ((alent *(*) (bfd *, asymbol *)) bfd_nullvoidptr)
 #define _bfd_nosymbols_find_nearest_line \
-  ((bfd_boolean (*) (bfd *, asection *, asymbol **, bfd_vma, const char **, \
-		     const char **, unsigned int *)) \
+  ((bfd_boolean (*) (bfd *, asymbol **, asection *, bfd_vma,		\
+		     const char **, const char **, unsigned int *,	\
+		     unsigned int *))					\
+   bfd_false)
+#define _bfd_nosymbols_find_line \
+  ((bfd_boolean (*) (bfd *, asymbol **, asymbol *,	\
+		     const char **, unsigned int *))	\
    bfd_false)
 #define _bfd_nosymbols_find_inliner_info \
   ((bfd_boolean (*) (bfd *, const char **, const char **, unsigned int *)) \
@@ -525,8 +530,8 @@ extern bfd_boolean _bfd_stab_section_find_nearest_line
 
 /* Find the nearest line using DWARF 1 debugging information.  */
 extern bfd_boolean _bfd_dwarf1_find_nearest_line
-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
-   const char **, unsigned int *);
+  (bfd *, asymbol **, asection *, bfd_vma,
+   const char **, const char **, unsigned int *);
 
 struct dwarf_debug_section
 {
@@ -541,21 +546,9 @@ extern const struct dwarf_debug_section dwarf_debug_sections[];
 
 /* Find the nearest line using DWARF 2 debugging information.  */
 extern bfd_boolean _bfd_dwarf2_find_nearest_line
-  (bfd *, const struct dwarf_debug_section *, asection *, asymbol **, bfd_vma,
-   const char **, const char **, unsigned int *, unsigned int *, unsigned int,
-   void **);
-
-/* Find the line using DWARF 2 debugging information.  */
-extern bfd_boolean _bfd_dwarf2_find_line
-  (bfd *, asymbol **, asymbol *, const char **,
-   unsigned int *, unsigned int *, unsigned int, void **);
-
-bfd_boolean _bfd_generic_find_line
-  (bfd *, asymbol **, asymbol *, const char **, unsigned int *);
-
-bfd_boolean _bfd_generic_find_nearest_line_discriminator
-  (bfd *, asection *, asymbol **, bfd_vma, const char **, const char **,
-   unsigned int *, unsigned int *);
+  (bfd *, asymbol **, asymbol *, asection *, bfd_vma,
+   const char **, const char **, unsigned int *, unsigned int *,
+   const struct dwarf_debug_section *, unsigned int, void **);
 
 /* Find inliner info after calling bfd_find_nearest_line. */
 extern bfd_boolean _bfd_dwarf2_find_inliner_info
@@ -1126,6 +1119,10 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_MICROMIPS_7_PCREL_S1",
   "BFD_RELOC_MICROMIPS_10_PCREL_S1",
   "BFD_RELOC_MICROMIPS_16_PCREL_S1",
+  "BFD_RELOC_MIPS_21_PCREL_S2",
+  "BFD_RELOC_MIPS_26_PCREL_S2",
+  "BFD_RELOC_MIPS_18_PCREL_S3",
+  "BFD_RELOC_MIPS_19_PCREL_S2",
   "BFD_RELOC_MICROMIPS_GPREL16",
   "BFD_RELOC_MICROMIPS_HI16",
   "BFD_RELOC_MICROMIPS_HI16_S",
@@ -1793,6 +1790,13 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_NDS32_15_FIXED",
   "BFD_RELOC_NDS32_17_FIXED",
   "BFD_RELOC_NDS32_25_FIXED",
+  "BFD_RELOC_NDS32_LONGCALL4",
+  "BFD_RELOC_NDS32_LONGCALL5",
+  "BFD_RELOC_NDS32_LONGCALL6",
+  "BFD_RELOC_NDS32_LONGJUMP4",
+  "BFD_RELOC_NDS32_LONGJUMP5",
+  "BFD_RELOC_NDS32_LONGJUMP6",
+  "BFD_RELOC_NDS32_LONGJUMP7",
   "BFD_RELOC_NDS32_PLTREL_HI20",
   "BFD_RELOC_NDS32_PLTREL_LO12",
   "BFD_RELOC_NDS32_PLT_GOTREL_HI20",
@@ -1834,11 +1838,25 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_NDS32_DIFF16",
   "BFD_RELOC_NDS32_DIFF32",
   "BFD_RELOC_NDS32_DIFF_ULEB128",
+  "BFD_RELOC_NDS32_EMPTY",
   "BFD_RELOC_NDS32_25_ABS",
   "BFD_RELOC_NDS32_DATA",
   "BFD_RELOC_NDS32_TRAN",
   "BFD_RELOC_NDS32_17IFC_PCREL",
   "BFD_RELOC_NDS32_10IFCU_PCREL",
+  "BFD_RELOC_NDS32_TPOFF",
+  "BFD_RELOC_NDS32_TLS_LE_HI20",
+  "BFD_RELOC_NDS32_TLS_LE_LO12",
+  "BFD_RELOC_NDS32_TLS_LE_ADD",
+  "BFD_RELOC_NDS32_TLS_LE_LS",
+  "BFD_RELOC_NDS32_GOTTPOFF",
+  "BFD_RELOC_NDS32_TLS_IE_HI20",
+  "BFD_RELOC_NDS32_TLS_IE_LO12S2",
+  "BFD_RELOC_NDS32_TLS_TPOFF",
+  "BFD_RELOC_NDS32_TLS_LE_20",
+  "BFD_RELOC_NDS32_TLS_LE_15S0",
+  "BFD_RELOC_NDS32_TLS_LE_15S1",
+  "BFD_RELOC_NDS32_TLS_LE_15S2",
   "BFD_RELOC_V850_9_PCREL",
   "BFD_RELOC_V850_22_PCREL",
   "BFD_RELOC_V850_SDA_16_16_OFFSET",

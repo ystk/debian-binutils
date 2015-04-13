@@ -62,9 +62,6 @@ static int no_toc_opt = 0;
 /* Whether to sort input toc and got sections.  */
 static int no_toc_sort = 0;
 
-/* Set if individual PLT call stubs should be aligned.  */
-static int plt_stub_align = 0;
-
 static asection *toc_section = 0;
 
 /* This is called before the input files are opened.  We create a new
@@ -377,7 +374,9 @@ ppc_add_stub_section (const char *stub_sec_name, asection *input_section)
 						 stub_sec_name, flags);
   if (stub_sec == NULL
       || !bfd_set_section_alignment (stub_file->the_bfd, stub_sec,
-				     plt_stub_align > 5 ? plt_stub_align : 5))
+				     (params.plt_stub_align > 5
+				      ? params.plt_stub_align
+				      : 5)))
     goto err_ret;
 
   output_section = input_section->output_section;
@@ -460,19 +459,6 @@ gld${EMULATION_NAME}_after_allocation (void)
 {
   int ret;
 
-  /* bfd_elf_discard_info just plays with data and debugging sections,
-     ie. doesn't affect code size, so we can delay resizing the
-     sections.  It's likely we'll resize everything in the process of
-     adding stubs.  */
-  ret = bfd_elf_discard_info (link_info.output_bfd, &link_info);
-  if (ret < 0)
-    {
-      einfo ("%X%P: .eh_frame/.stab edit: %E\n");
-      return;
-    }
-  else if (ret > 0)
-    need_laying_out = 1;
-
   /* If generating a relocatable output file, then we don't have any
      stubs.  */
   if (stub_file != NULL && !link_info.relocatable)
@@ -480,7 +466,7 @@ gld${EMULATION_NAME}_after_allocation (void)
       ret = ppc64_elf_setup_section_lists (&link_info);
       if (ret < 0)
 	einfo ("%X%P: can not size stub section: %E\n");
-      else if (ret > 0)
+      else
 	{
 	  ppc64_elf_start_multitoc_partition (&link_info);
 
@@ -510,6 +496,19 @@ gld${EMULATION_NAME}_after_allocation (void)
 	}
     }
 
+  /* We can't parse and merge .eh_frame until the glink .eh_frame has
+     been generated.  Otherwise the glink .eh_frame CIE won't be
+     merged with other CIEs, and worse, the glink .eh_frame FDEs won't
+     be listed in .eh_frame_hdr.  */
+  ret = bfd_elf_discard_info (link_info.output_bfd, &link_info);
+  if (ret < 0)
+    {
+      einfo ("%X%P: .eh_frame/.stab edit: %E\n");
+      return;
+    }
+  else if (ret > 0)
+    need_laying_out = 1;
+
   if (need_laying_out != -1)
     {
       gld${EMULATION_NAME}_map_segments (need_laying_out);
@@ -531,7 +530,8 @@ gld${EMULATION_NAME}_finish (void)
   /* e_entry on PowerPC64 points to the function descriptor for
      _start.  If _start is missing, default to the first function
      descriptor in the .opd section.  */
-  if ((elf_elfheader (link_info.output_bfd)->e_flags & EF_PPC64_ABI) == 1)
+  if (stub_file != NULL
+      && (elf_elfheader (link_info.output_bfd)->e_flags & EF_PPC64_ABI) == 1)
     entry_section = ".opd";
 
   if (params.emit_stub_syms < 0)
@@ -799,14 +799,14 @@ PARSE_AND_LIST_ARGS_CASES=${PARSE_AND_LIST_ARGS_CASES}'
 	  unsigned long val = strtoul (optarg, &end, 0);
 	  if (*end || val > 8)
 	    einfo (_("%P%F: invalid --plt-align `%s'\''\n"), optarg);
-	  plt_stub_align = val;
+	  params.plt_stub_align = val;
 	}
       else
-	plt_stub_align = 5;
+	params.plt_stub_align = 5;
       break;
 
     case OPTION_NO_PLT_ALIGN:
-      plt_stub_align = 0;
+      params.plt_stub_align = 0;
       break;
 
     case OPTION_STUBSYMS:

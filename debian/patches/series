@@ -19,8 +19,28 @@
 
 # only applied for GFDL builds
 164_ld_doc_remove_xref.diff
-srec_scan_null_deref.diff
 gprof-build.diff
 #pr-ld-16428.diff
-gas-alignment-limit-aarch64.diff
 mips64-default-n64.diff
+
+# patches taken from the trunk
+aarch64-gold-updates.diff
+aarch64-gold-updates2.diff
+aarch64-bogus-assertion.diff
+aarch64-enable-targets.diff
+arm-ld-unique-tests.diff
+aarch64-thunderx.diff
+pr17729.diff
+pr17742.diff
+pr17531-1.diff
+pr17531-2.diff
+pr17531-3.diff
+pr17531-4.diff
+pr17531-5.diff
+pr17531-6.diff
+# these need some real backports ...
+#pr17531-7.diff
+#pr17531-8.diff
+#pr17531-9.diff
+
+x86_64-pie-relocs.patch

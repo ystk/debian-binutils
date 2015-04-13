@@ -753,10 +753,6 @@ enum
   MOD_0F1A_PREFIX_0,
   MOD_0F1B_PREFIX_0,
   MOD_0F1B_PREFIX_1,
-  MOD_0F20,
-  MOD_0F21,
-  MOD_0F22,
-  MOD_0F23,
   MOD_0F24,
   MOD_0F26,
   MOD_0F2B_PREFIX_0,
@@ -903,7 +899,9 @@ enum
   PREFIX_0FAE_REG_1,
   PREFIX_0FAE_REG_2,
   PREFIX_0FAE_REG_3,
+  PREFIX_0FAE_REG_6,
   PREFIX_0FAE_REG_7,
+  PREFIX_RM_0_0FAE_REG_7,
   PREFIX_0FB8,
   PREFIX_0FBC,
   PREFIX_0FBD,
@@ -1480,6 +1478,7 @@ enum
   PREFIX_EVEX_0F387D,
   PREFIX_EVEX_0F387E,
   PREFIX_EVEX_0F387F,
+  PREFIX_EVEX_0F3883,
   PREFIX_EVEX_0F3888,
   PREFIX_EVEX_0F3889,
   PREFIX_EVEX_0F388A,
@@ -1513,6 +1512,8 @@ enum
   PREFIX_EVEX_0F38AD,
   PREFIX_EVEX_0F38AE,
   PREFIX_EVEX_0F38AF,
+  PREFIX_EVEX_0F38B4,
+  PREFIX_EVEX_0F38B5,
   PREFIX_EVEX_0F38B6,
   PREFIX_EVEX_0F38B7,
   PREFIX_EVEX_0F38B8,
@@ -2297,6 +2298,7 @@ enum
   EVEX_W_0F387A_P_2,
   EVEX_W_0F387B_P_2,
   EVEX_W_0F387D_P_2,
+  EVEX_W_0F3883_P_2,
   EVEX_W_0F388D_P_2,
   EVEX_W_0F3891_P_2,
   EVEX_W_0F3893_P_2,
@@ -2397,6 +2399,9 @@ struct dis386 {
    "LS" => print "abs" in 64bit mode and behave as 'S' otherwise
    "LV" => print "abs" for 64bit operand and behave as 'S' otherwise
    "LW" => print 'd', 'q' depending on the VEX.W bit
+   "LP" => print 'w' or 'l' ('d' in Intel mode) if instruction has
+	   an operand size prefix, or suffix_always is true.  print
+	   'q' if rex prefix is present.
 
    Many of the above letters print nothing in Intel mode.  See "putop"
    for the details.
@@ -2638,7 +2643,7 @@ static const struct dis386 dis386[] = {
   { "int3",		{ XX } },
   { "int",		{ Ib } },
   { X86_64_TABLE (X86_64_CE) },
-  { "iretP",		{ XX } },
+  { "iret%LP",		{ XX } },
   /* d0 */
   { REG_TABLE (REG_D0) },
   { REG_TABLE (REG_D1) },
@@ -2704,7 +2709,7 @@ static const struct dis386 dis386_twobyte[] = {
   { Bad_Opcode },
   { "syscall",		{ XX } },
   { "clts",		{ XX } },
-  { "sysretP",		{ XX } },
+  { "sysret%LP",		{ XX } },
   /* 08 */
   { "invd",		{ XX } },
   { "wbinvd",		{ XX } },
@@ -2733,10 +2738,10 @@ static const struct dis386 dis386_twobyte[] = {
   { "nopQ",		{ Ev } },
   { "nopQ",		{ Ev } },
   /* 20 */
-  { MOD_TABLE (MOD_0F20) },
-  { MOD_TABLE (MOD_0F21) },
-  { MOD_TABLE (MOD_0F22) },
-  { MOD_TABLE (MOD_0F23) },
+  { "movZ",		{ Rm, Cm } },
+  { "movZ",		{ Rm, Dm } },
+  { "movZ",		{ Cm, Rm } },
+  { "movZ",		{ Dm, Rm } },
   { MOD_TABLE (MOD_0F24) },
   { Bad_Opcode },
   { MOD_TABLE (MOD_0F26) },
@@ -3983,11 +3988,25 @@ static const struct dis386 prefix_table[][4] = {
     { "wrgsbase", { Ev } },
   },
 
+  /* PREFIX_0FAE_REG_6 */
+  {
+    { "xsaveopt",      { FXSAVE } },
+    { Bad_Opcode },
+    { "clwb",	{ Mb } },
+  },
+
   /* PREFIX_0FAE_REG_7 */
   {
     { "clflush",	{ Mb } },
     { Bad_Opcode },
     { "clflushopt",	{ Mb } },
+  },
+
+  /* PREFIX_RM_0_0FAE_REG_7 */
+  {
+    { "sfence",		{ Skip_MODRM } },
+    { Bad_Opcode },
+    { "pcommit",		{ Skip_MODRM } },
   },
 
   /* PREFIX_0FB8 */
@@ -11639,26 +11658,6 @@ static const struct dis386 mod_table[][2] = {
     { "nopQ",		{ Ev } },
   },
   {
-    /* MOD_0F20 */
-    { Bad_Opcode },
-    { "movZ",		{ Rm, Cm } },
-  },
-  {
-    /* MOD_0F21 */
-    { Bad_Opcode },
-    { "movZ",		{ Rm, Dm } },
-  },
-  {
-    /* MOD_0F22 */
-    { Bad_Opcode },
-    { "movZ",		{ Cm, Rm } },
-  },
-  {
-    /* MOD_0F23 */
-    { Bad_Opcode },
-    { "movZ",		{ Dm, Rm } },
-  },
-  {
     /* MOD_0F24 */
     { Bad_Opcode },
     { "movL",		{ Rd, Td } },
@@ -11770,7 +11769,7 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0FAE_REG_6 */
-    { "xsaveopt",	{ FXSAVE } },
+    { PREFIX_TABLE (PREFIX_0FAE_REG_6) },
     { RM_TABLE (RM_0FAE_REG_6) },
   },
   {
@@ -12048,7 +12047,7 @@ static const struct dis386 rm_table[][8] = {
   },
   {
     /* RM_0FAE_REG_7 */
-    { "sfence",		{ Skip_MODRM } },
+    { PREFIX_TABLE (PREFIX_RM_0_0FAE_REG_7) },
   },
 };
 
@@ -13835,32 +13834,62 @@ case_L:
 	      break;
 	    }
 	  /* Fall through.  */
+	  goto case_P;
 	case 'P':
-	  if (intel_syntax)
+	  if (l == 0 && len == 1)
 	    {
-	      if ((rex & REX_W) == 0
-		  && (prefixes & PREFIX_DATA))
+case_P:
+	      if (intel_syntax)
 		{
-		  if ((sizeflag & DFLAG) == 0)
-		    *obufp++ = 'w';
-		   used_prefixes |= (prefixes & PREFIX_DATA);
+		  if ((rex & REX_W) == 0
+		      && (prefixes & PREFIX_DATA))
+		    {
+		      if ((sizeflag & DFLAG) == 0)
+			*obufp++ = 'w';
+		      used_prefixes |= (prefixes & PREFIX_DATA);
+		    }
+		  break;
 		}
-	      break;
-	    }
-	  if ((prefixes & PREFIX_DATA)
-	      || (rex & REX_W)
-	      || (sizeflag & SUFFIX_ALWAYS))
-	    {
-	      USED_REX (REX_W);
-	      if (rex & REX_W)
-		*obufp++ = 'q';
-	      else
+	      if ((prefixes & PREFIX_DATA)
+		  || (rex & REX_W)
+		  || (sizeflag & SUFFIX_ALWAYS))
 		{
-		   if (sizeflag & DFLAG)
-		      *obufp++ = 'l';
-		   else
-		     *obufp++ = 'w';
-		   used_prefixes |= (prefixes & PREFIX_DATA);
+		  USED_REX (REX_W);
+		  if (rex & REX_W)
+		    *obufp++ = 'q';
+		  else
+		    {
+		      if (sizeflag & DFLAG)
+			*obufp++ = 'l';
+		      else
+			*obufp++ = 'w';
+		      used_prefixes |= (prefixes & PREFIX_DATA);
+		    }
+		}
+	    }
+	  else
+	    {
+	      if (l != 1 || len != 2 || last[0] != 'L')
+		{
+		  SAVE_LAST (*p);
+		  break;
+		}
+
+	      if ((prefixes & PREFIX_DATA)
+		  || (rex & REX_W)
+		  || (sizeflag & SUFFIX_ALWAYS))
+		{
+		  USED_REX (REX_W);
+		  if (rex & REX_W)
+		    *obufp++ = 'q';
+		  else
+		    {
+		      if (sizeflag & DFLAG)
+			*obufp++ = intel_syntax ? 'd' : 'l';
+		      else
+			*obufp++ = 'w';
+		      used_prefixes |= (prefixes & PREFIX_DATA);
+		    }
 		}
 	    }
 	  break;
@@ -15859,10 +15888,10 @@ OP_T (int dummy ATTRIBUTE_UNUSED, int sizeflag ATTRIBUTE_UNUSED)
 static void
 OP_R (int bytemode, int sizeflag)
 {
-  if (modrm.mod == 3)
-    OP_E (bytemode, sizeflag);
-  else
-    BadOp ();
+  /* Skip mod/rm byte.  */
+  MODRM_CHECK;
+  codep++;
+  OP_E_register (bytemode, sizeflag);
 }
 
 static void

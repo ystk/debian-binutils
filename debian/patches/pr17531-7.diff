@@ -1,0 +1,523 @@
+# DP: PR binutils/17531: More fixes for invalid memory accesses
+# DP: triggered by fuzzed binaries (82b1b41bcdc6d01fdbd94b246e24a8a8f8c2bddd).
+
+binutils/
+
+2015-01-05  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/17531
+	* dwarf.c (alloc_num_debug_info_entries): New variable.
+	(process_debug_info): Set it.  Use it to avoid displaying
+	attributes for which there is no info.
+	(display_debug_abbrev): Check that the debug_info_entry index is
+	valid before using it.
+	(display_loc_list_dwo): Likewise.
+	(process_cu_tu_index): Add range check for an overlarge dw_sect
+	value.
+	(free_debug_memory): Reset alloc_num_debug_info_entries.
+	* readelf.c (slurp_ia64_unwind_table): Warn if the reloc could not
+	be indentified.
+	(dynamic_section_mips_val): Warn if the timestamp is invalid.
+	(print_mips_got_entry): Add a data_end parameter.  Warn if a read
+	would go beyond the end of the data, and return an error value.
+	(process_mips_specific): Do not read options from beyond the end
+	of the section.
+	Correct code to display optional data at the end of an option.
+	Warn if there are too many GOT symbols.
+	Update calls to print_mips_got_entry, and handle error returns.
+
+diff --git a/binutils/dwarf.c b/binutils/dwarf.c
+index 3d3f4cc..2500a49 100644
+--- a/binutils/dwarf.c
++++ b/binutils/dwarf.c
+@@ -38,6 +38,7 @@ static unsigned int last_pointer_size = 0;
+ static int warned_about_missing_comp_units = FALSE;
+ 
+ static unsigned int num_debug_info_entries = 0;
++static unsigned int alloc_num_debug_info_entries = 0;
+ static debug_info *debug_information = NULL;
+ /* Special value for num_debug_info_entries to indicate
+    that the .debug_info section could not be loaded/parsed.  */
+@@ -2280,8 +2281,10 @@ process_debug_info (struct dwarf_section *section,
+ 	{
+ 	  error (_("Not enough memory for a debug info array of %u entries\n"),
+ 		 num_units);
++	  alloc_num_debug_info_entries = num_debug_info_entries = 0;
+ 	  return 0;
+ 	}
++      alloc_num_debug_info_entries = num_units;
+     }
+ 
+   if (!do_loc)
+@@ -2596,10 +2599,11 @@ process_debug_info (struct dwarf_section *section,
+ 		/* Show the offset from where the tag was extracted.  */
+ 		printf ("    <%lx>", (unsigned long)(tags - section_begin));
+ 
+-	      arg = debug_information;
+-	      if (debug_information)
+-		arg += unit;
+-
++	      if (debug_information && unit < alloc_num_debug_info_entries)
++		arg = debug_information + unit;
++	      else
++		arg = NULL;
++	      
+ 	      tags = read_and_display_attr (attr->attribute,
+ 					    attr->form,
+ 					    tags,
+@@ -2624,7 +2628,12 @@ process_debug_info (struct dwarf_section *section,
+   if ((do_loc || do_debug_loc || do_debug_ranges)
+       && num_debug_info_entries == 0
+       && ! do_types)
+-    num_debug_info_entries = num_units;
++    {
++      if (num_units > alloc_num_debug_info_entries)	
++	num_debug_info_entries = alloc_num_debug_info_entries;
++      else
++	num_debug_info_entries = num_units;
++    }
+ 
+   if (!do_loc)
+     printf ("\n");
+@@ -2661,9 +2670,10 @@ load_debug_info (void * file)
+   if (load_debug_section (info, file)
+       && process_debug_info (&debug_displays [info].section, file, abbrev, 1, 0))
+     return num_debug_info_entries;
+-  else if (load_debug_section (info_dwo, file)
+-           && process_debug_info (&debug_displays [info_dwo].section, file,
+-                                  abbrev_dwo, 1, 0))
++
++  if (load_debug_section (info_dwo, file)
++      && process_debug_info (&debug_displays [info_dwo].section, file,
++			     abbrev_dwo, 1, 0))
+     return num_debug_info_entries;
+ 
+   num_debug_info_entries = DEBUG_INFO_UNAVAILABLE;
+@@ -4271,23 +4281,35 @@ display_debug_abbrev (struct dwarf_section *section,
+ static void
+ display_loc_list (struct dwarf_section *section,
+                   unsigned char **start_ptr,
+-                  int debug_info_entry,
++                  unsigned int debug_info_entry,
+                   unsigned long offset,
+                   unsigned long base_address,
+                   int has_frame_base)
+ {
+   unsigned char *start = *start_ptr;
+   unsigned char *section_end = section->start + section->size;
+-  unsigned long cu_offset = debug_information [debug_info_entry].cu_offset;
+-  unsigned int pointer_size = debug_information [debug_info_entry].pointer_size;
+-  unsigned int offset_size = debug_information [debug_info_entry].offset_size;
+-  int dwarf_version = debug_information [debug_info_entry].dwarf_version;
++  unsigned long cu_offset;
++  unsigned int pointer_size;
++  unsigned int offset_size;
++  int dwarf_version;
+ 
+   dwarf_vma begin;
+   dwarf_vma end;
+   unsigned short length;
+   int need_frame_base;
+ 
++  if (debug_info_entry >= num_debug_info_entries)
++    {
++      warn (_("No debug information available for loc lists of entry: %u\n"),
++	    debug_info_entry);
++      return;
++    }
++  
++  cu_offset = debug_information [debug_info_entry].cu_offset;
++  pointer_size = debug_information [debug_info_entry].pointer_size;
++  offset_size = debug_information [debug_info_entry].offset_size;
++  dwarf_version = debug_information [debug_info_entry].dwarf_version;
++  
+   if (pointer_size < 2 || pointer_size > 8)
+     {
+       warn (_("Invalid pointer size (%d) in debug info for entry %d\n"),
+@@ -4391,22 +4413,34 @@ print_addr_index (unsigned int idx, unsigned int len)
+ static void
+ display_loc_list_dwo (struct dwarf_section *section,
+                       unsigned char **start_ptr,
+-                      int debug_info_entry,
++                      unsigned int debug_info_entry,
+                       unsigned long offset,
+                       int has_frame_base)
+ {
+   unsigned char *start = *start_ptr;
+   unsigned char *section_end = section->start + section->size;
+-  unsigned long cu_offset = debug_information [debug_info_entry].cu_offset;
+-  unsigned int pointer_size = debug_information [debug_info_entry].pointer_size;
+-  unsigned int offset_size = debug_information [debug_info_entry].offset_size;
+-  int dwarf_version = debug_information [debug_info_entry].dwarf_version;
++  unsigned long cu_offset;
++  unsigned int pointer_size;
++  unsigned int offset_size;
++  int dwarf_version;
+   int entry_type;
+   unsigned short length;
+   int need_frame_base;
+   unsigned int idx;
+   unsigned int bytes_read;
+ 
++  if (debug_info_entry >= num_debug_info_entries)
++    {
++      warn (_("No debug information for loc lists of entry: %u\n"),
++	    debug_info_entry);
++      return;
++    }
++
++  cu_offset = debug_information [debug_info_entry].cu_offset;
++  pointer_size = debug_information [debug_info_entry].pointer_size;
++  offset_size = debug_information [debug_info_entry].offset_size;
++  dwarf_version = debug_information [debug_info_entry].dwarf_version;
++
+   if (pointer_size < 2 || pointer_size > 8)
+     {
+       warn (_("Invalid pointer size (%d) in debug info for entry %d\n"),
+@@ -4902,10 +4936,8 @@ display_debug_addr (struct dwarf_section *section,
+ 
+   count = 0;
+   for (i = 0; i < num_debug_info_entries; i++)
+-    {
+-      if (debug_information [i].addr_base != DEBUG_INFO_UNAVAILABLE)
+-        debug_addr_info [count++] = &debug_information [i];
+-    }
++    if (debug_information [i].addr_base != DEBUG_INFO_UNAVAILABLE)
++      debug_addr_info [count++] = debug_information + i;
+ 
+   /* Add a sentinel to make iteration convenient.  */
+   debug_addr_info [count] = (debug_info *) xmalloc (sizeof (debug_info));
+@@ -6963,7 +6995,12 @@ process_cu_tu_index (struct dwarf_section *section, int do_display)
+ 		  else
+ 		    {
+ 		      SAFE_BYTE_GET (dw_sect, ppool + j * 4, 4, limit);
+-		      this_set [row - 1].section_offsets [dw_sect] = val;
++
++		      /* PR 17531: file: 10796eb3.  */
++		      if (dw_sect >= DW_SECT_MAX)
++			warn (_("Overlarge Dwarf section index detected: %u\n"), dw_sect);
++		      else
++			this_set [row - 1].section_offsets [dw_sect] = val;
+ 		    }
+ 		}
+ 
+@@ -7016,6 +7053,9 @@ process_cu_tu_index (struct dwarf_section *section, int do_display)
+ 		  else
+ 		    {
+ 		      SAFE_BYTE_GET (dw_sect, ppool + j * 4, 4, limit);
++		      if (dw_sect >= DW_SECT_MAX)
++			warn (_("Overlarge Dwarf section index detected: %u\n"), dw_sect);
++		      else
+ 		      this_set [row - 1].section_sizes [dw_sect] = val;
+ 		    }
+ 		}
+@@ -7100,34 +7140,40 @@ display_debug_not_supported (struct dwarf_section *section,
+   return 1;
+ }
+ 
++/* Like malloc, but takes two parameters.
++   Note: does *not* initialise the allocated memory to zero.  */
+ void *
+ cmalloc (size_t nmemb, size_t size)
+ {
+   /* Check for overflow.  */
+   if (nmemb >= ~(size_t) 0 / size)
+     return NULL;
+-  else
+-    return malloc (nmemb * size);
++
++  return xmalloc (nmemb * size);
+ }
+ 
++/* Like xmalloc, but takes two parameters.
++   Note: does *not* initialise the allocated memory to zero.  */
+ void *
+ xcmalloc (size_t nmemb, size_t size)
+ {
+   /* Check for overflow.  */
+   if (nmemb >= ~(size_t) 0 / size)
+     return NULL;
+-  else
+-    return xmalloc (nmemb * size);
++
++  return xmalloc (nmemb * size);
+ }
+ 
++/* Like xrealloc, but takes three parameters.
++   Note: does *not* initialise any new memory to zero.  */
+ void *
+ xcrealloc (void *ptr, size_t nmemb, size_t size)
+ {
+   /* Check for overflow.  */
+   if (nmemb >= ~(size_t) 0 / size)
+     return NULL;
+-  else
+-    return xrealloc (ptr, nmemb * size);
++
++  return xrealloc (ptr, nmemb * size);
+ }
+ 
+ void
+@@ -7155,10 +7201,9 @@ free_debug_memory (void)
+ 		free (debug_information [i].range_lists);
+ 	    }
+ 	}
+-
+       free (debug_information);
+       debug_information = NULL;
+-      num_debug_info_entries = 0;
++      alloc_num_debug_info_entries = num_debug_info_entries = 0;
+     }
+ }
+ 
+diff --git a/binutils/dwarf.h b/binutils/dwarf.h
+index d43f096..e8a768e 100644
+--- a/binutils/dwarf.h
++++ b/binutils/dwarf.h
+@@ -248,10 +248,10 @@ extern void dwarf_select_sections_by_names (const char *);
+ extern void dwarf_select_sections_by_letters (const char *);
+ extern void dwarf_select_sections_all (void);
+ 
+-unsigned int * find_cu_tu_set (void *, unsigned int);
++extern unsigned int * find_cu_tu_set (void *, unsigned int);
+ 
+-void * cmalloc (size_t, size_t);
+-void * xcmalloc (size_t, size_t);
+-void * xcrealloc (void *, size_t, size_t);
++extern void * cmalloc (size_t, size_t);
++extern void * xcmalloc (size_t, size_t);
++extern void * xcrealloc (void *, size_t, size_t);
+ 
+ extern dwarf_vma read_leb128 (unsigned char *, unsigned int *, bfd_boolean, const unsigned char * const);
+diff --git a/binutils/readelf.c b/binutils/readelf.c
+index 6c47d9a..6dd3a4c 100644
+--- a/binutils/readelf.c
++++ b/binutils/readelf.c
+@@ -6643,9 +6643,16 @@ slurp_ia64_unwind_table (FILE * file,
+ 	  relname = elf_ia64_reloc_type (get_reloc_type (rp->r_info));
+ 	  sym = aux->symtab + get_reloc_symindex (rp->r_info);
+ 
++	  /* PR 17531: file: 9fa67536.  */
++	  if (relname == NULL)
++	    {
++	      warn (_("Skipping unknown relocation type: %u\n"), get_reloc_type (rp->r_info));
++	      continue;
++	    }
++ 
+ 	  if (! const_strneq (relname, "R_IA64_SEGREL"))
+ 	    {
+-	      warn (_("Skipping unexpected relocation type %s\n"), relname);
++	      warn (_("Skipping unexpected relocation type: %s\n"), relname);
+ 	      continue;
+ 	    }
+ 
+@@ -8261,12 +8268,16 @@ dynamic_section_mips_val (Elf_Internal_Dyn * entry)
+       {
+ 	char timebuf[20];
+ 	struct tm * tmp;
+-
+ 	time_t atime = entry->d_un.d_val;
++
+ 	tmp = gmtime (&atime);
+-	snprintf (timebuf, sizeof (timebuf), "%04u-%02u-%02uT%02u:%02u:%02u",
+-		  tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday,
+-		  tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
++	/* PR 17531: file: 6accc532.  */
++	if (tmp == NULL)
++	  snprintf (timebuf, sizeof (timebuf), _("<corrupt>"));
++	else
++	  snprintf (timebuf, sizeof (timebuf), "%04u-%02u-%02uT%02u:%02u:%02u",
++		    tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday,
++		    tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
+ 	printf (_("Time Stamp: %s"), timebuf);
+       }
+       break;
+@@ -13378,10 +13389,12 @@ process_msp430x_specific (FILE * file)
+ 
+ /* DATA points to the contents of a MIPS GOT that starts at VMA PLTGOT.
+    Print the Address, Access and Initial fields of an entry at VMA ADDR
+-   and return the VMA of the next entry.  */
++   and return the VMA of the next entry, or -1 if there was a problem.
++   Does not read from DATA_END or beyond.  */
+ 
+ static bfd_vma
+-print_mips_got_entry (unsigned char * data, bfd_vma pltgot, bfd_vma addr)
++print_mips_got_entry (unsigned char * data, bfd_vma pltgot, bfd_vma addr,
++		      unsigned char * data_end)
+ {
+   printf ("  ");
+   print_vma (addr, LONG_HEX);
+@@ -13396,9 +13409,19 @@ print_mips_got_entry (unsigned char * data, bfd_vma pltgot, bfd_vma addr)
+   else
+     {
+       bfd_vma entry;
++      unsigned char * from = data + addr - pltgot;
+ 
+-      entry = byte_get (data + addr - pltgot, is_32bit_elf ? 4 : 8);
+-      print_vma (entry, LONG_HEX);
++      if (from + (is_32bit_elf ? 4 : 8) > data_end)
++	{
++	  warn (_("MIPS GOT entry extends beyond the end of available data\n"));
++	  printf ("%*s", is_32bit_elf ? 8 : 16, _("<corrupt>"));
++	  return (bfd_vma) -1;
++	}
++      else
++	{
++	  entry = byte_get (data + addr - pltgot, is_32bit_elf ? 4 : 8);
++	  print_vma (entry, LONG_HEX);
++	}
+     }
+   return addr + (is_32bit_elf ? 4 : 8);
+ }
+@@ -13785,7 +13808,7 @@ process_mips_specific (FILE * file)
+ 	  offset = cnt = 0;
+ 	  option = iopt;
+ 
+-	  while (offset < sect->sh_size)
++	  while (offset <= sect->sh_size - sizeof (* eopt))
+ 	    {
+ 	      Elf_External_Options * eoption;
+ 
+@@ -13796,8 +13819,16 @@ process_mips_specific (FILE * file)
+ 	      option->section = BYTE_GET (eoption->section);
+ 	      option->info = BYTE_GET (eoption->info);
+ 
++	      /* PR 17531: file: ffa0fa3b.  */
++	      if (option->size < sizeof (* eopt)
++		  || offset + option->size > sect->sh_size)
++		{
++		  warn (_("Invalid size (%u) for MIPS option\n"), option->size);
++		  option->size = sizeof (* eopt);
++		  break;
++		}
+ 	      offset += option->size;
+-
++		
+ 	      ++option;
+ 	      ++cnt;
+ 	    }
+@@ -13806,6 +13837,7 @@ process_mips_specific (FILE * file)
+ 		  printable_section_name (sect), cnt);
+ 
+ 	  option = iopt;
++	  offset = 0;
+ 
+ 	  while (cnt-- > 0)
+ 	    {
+@@ -13942,13 +13974,18 @@ process_mips_specific (FILE * file)
+ 
+ 	      len = sizeof (* eopt);
+ 	      while (len < option->size)
+-		if (((char *) option)[len] >= ' '
+-		    && ((char *) option)[len] < 0x7f)
+-		  printf ("%c", ((char *) option)[len++]);
+-		else
+-		  printf ("\\%03o", ((char *) option)[len++]);
++		{
++		  char datum = * ((char *) eopt + offset + len);
+ 
++		  if (ISPRINT (datum))
++		    printf ("%c", datum);
++		  else
++		    printf ("\\%03o", datum);
++		  len ++;
++		}
+ 	      fputs ("\n", stdout);
++
++	      offset += option->size;
+ 	      ++option;
+ 	    }
+ 
+@@ -14038,6 +14075,7 @@ process_mips_specific (FILE * file)
+       bfd_vma ent, local_end, global_end;
+       size_t i, offset;
+       unsigned char * data;
++      unsigned char * data_end;
+       int addr_size;
+ 
+       ent = pltgot;
+@@ -14048,18 +14086,25 @@ process_mips_specific (FILE * file)
+       if (symtabno < gotsym)
+ 	{
+ 	  error (_("The GOT symbol offset (%lu) is greater than the symbol table size (%lu)\n"),
+-		 (long) gotsym, (long) symtabno);
++		 (unsigned long) gotsym, (unsigned long) symtabno);
+ 	  return 0;
+ 	}
+- 
++
+       global_end = local_end + (symtabno - gotsym) * addr_size;
+-      assert (global_end >= local_end);
++      /* PR 17531: file: 54c91a34.  */
++      if (global_end < local_end)
++	{
++	  error (_("Too many GOT symbols: %lu\n"), (unsigned long) symtabno);
++	  return 0;
++	}
++      
+       offset = offset_from_vma (file, pltgot, global_end - pltgot);
+       data = (unsigned char *) get_data (NULL, file, offset,
+                                          global_end - pltgot, 1,
+ 					 _("Global Offset Table data"));
+       if (data == NULL)
+ 	return 0;
++      data_end = data + (global_end - pltgot);
+ 
+       printf (_("\nPrimary GOT:\n"));
+       printf (_(" Canonical gp value: "));
+@@ -14070,14 +14115,18 @@ process_mips_specific (FILE * file)
+       printf (_("  %*s %10s %*s Purpose\n"),
+ 	      addr_size * 2, _("Address"), _("Access"),
+ 	      addr_size * 2, _("Initial"));
+-      ent = print_mips_got_entry (data, pltgot, ent);
++      ent = print_mips_got_entry (data, pltgot, ent, data_end);
+       printf (_(" Lazy resolver\n"));
++      if (ent == (bfd_vma) -1)
++	goto got_print_fail;
+       if (data
+ 	  && (byte_get (data + ent - pltgot, addr_size)
+ 	      >> (addr_size * 8 - 1)) != 0)
+ 	{
+-	  ent = print_mips_got_entry (data, pltgot, ent);
++	  ent = print_mips_got_entry (data, pltgot, ent, data_end);
+ 	  printf (_(" Module pointer (GNU extension)\n"));
++	  if (ent == (bfd_vma) -1)
++	    goto got_print_fail;
+ 	}
+       printf ("\n");
+ 
+@@ -14089,8 +14138,10 @@ process_mips_specific (FILE * file)
+ 		  addr_size * 2, _("Initial"));
+ 	  while (ent < local_end)
+ 	    {
+-	      ent = print_mips_got_entry (data, pltgot, ent);
++	      ent = print_mips_got_entry (data, pltgot, ent, data_end);
+ 	      printf ("\n");
++	      if (ent == (bfd_vma) -1)
++		goto got_print_fail;
+ 	    }
+ 	  printf ("\n");
+ 	}
+@@ -14113,7 +14164,7 @@ process_mips_specific (FILE * file)
+ 
+ 	  for (i = gotsym; i < symtabno; i++)
+ 	    {
+-	      ent = print_mips_got_entry (data, pltgot, ent);
++	      ent = print_mips_got_entry (data, pltgot, ent, data_end);
+ 	      printf (" ");
+ 
+ 	      if (dynamic_symbols == NULL)
+@@ -14137,10 +14188,13 @@ process_mips_specific (FILE * file)
+ 			(unsigned long) i);
+ 
+ 	      printf ("\n");
++	      if (ent == (bfd_vma) -1)
++		break;
+ 	    }
+ 	  printf ("\n");
+ 	}
+ 
++    got_print_fail:
+       if (data)
+ 	free (data);
+     }

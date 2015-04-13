@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Matthias Klose <doko@debian.org>
 Uploaders: James Troup <james@nocrew.org>, Daniel Jacobowitz <dan@debian.org>
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Build-Depends: autoconf (>= 2.64), dpkg-dev (>= 1.17.11),
   bison, flex, gettext, texinfo, dejagnu, quilt,
   python3:any, file, xz-utils, lsb-release, zlib1g-dev

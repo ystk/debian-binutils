@@ -1,0 +1,178 @@
+# DP: PR binutils/17531: More fixes for invalid memory accesses
+# DP: triggered by fuzzed binaries (058037d3a169c91042c9b8549f7d04fd7550bed6).
+
+binutils/
+
+2014-12-22  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/17531
+	* dwarf.c (decode_location_expression): Check for an out of range
+	value for a DW_OP_GNU_entry_value expression.
+	(display_debug_lines_raw): Check for a partial
+	.debug_line. section being encountered without a prior, full
+	.debug.line section.
+	(display_debug_lines_decoded): Likewise.  Also check for
+	li_line_range being zero.
+	(display_debug_pubnames_worker): Check for an invalid pn_length
+	field.
+	(read_cie): Add range checks.
+	* elfcomm.c (setup_archive): Check for a negative longnames_size.
+
+diff --git a/binutils/dwarf.c b/binutils/dwarf.c
+index 49f9c49..56f27ec 100644
+--- a/binutils/dwarf.c
++++ b/binutils/dwarf.c
+@@ -1303,6 +1303,9 @@ decode_location_expression (unsigned char * data,
+ 	case DW_OP_GNU_entry_value:
+ 	  uvalue = read_uleb128 (data, &bytes_read, end);
+ 	  data += bytes_read;
++	  /* PR 17531: file: 0cc9cd00.  */
++	  if (uvalue > (dwarf_vma) (end - data))
++	    uvalue = end - data;
+ 	  printf ("DW_OP_GNU_entry_value: (");
+ 	  if (decode_location_expression (data, pointer_size, offset_size,
+ 					  dwarf_version, uvalue,
+@@ -2803,6 +2806,12 @@ display_debug_lines_raw (struct dwarf_section *section,
+ 	  end_of_sequence = end;
+ 	  standard_opcodes = NULL;
+ 	  linfo = saved_linfo;
++	  /* PR 17531: file: 0522b371.  */
++	  if (linfo.li_line_range == 0)
++	    {
++	      warn (_("Partial .debug_line. section encountered without a prior full .debug_line section"));
++	      return 0;
++	    }
+ 	  reset_state_machine (linfo.li_default_is_stmt);
+ 	}
+       else
+@@ -3154,6 +3163,12 @@ display_debug_lines_decoded (struct dwarf_section *section,
+ 	  end_of_sequence = end;
+ 	  standard_opcodes = NULL;
+ 	  linfo = saved_linfo;
++	  /* PR 17531: file: 0522b371.  */
++	  if (linfo.li_line_range == 0)
++	    {
++	      warn (_("Partial .debug_line. section encountered without a prior full .debug_line section"));
++	      return 0;
++	    }
+ 	  reset_state_machine (linfo.li_default_is_stmt);
+         }
+       else
+@@ -3164,6 +3179,12 @@ display_debug_lines_decoded (struct dwarf_section *section,
+ 						& end_of_sequence)) == NULL)
+ 	      return 0;
+ 
++	  /* PR 17531: file: 0522b371.  */
++	  if (linfo.li_line_range == 0)
++	    {
++	      warn (_("Line range of 0 is invalid, using 1 instead\n"));
++	      linfo.li_line_range = 1;
++	    }
+ 	  reset_state_machine (linfo.li_default_is_stmt);
+ 
+ 	  /* Save a pointer to the contents of the Opcodes table.  */
+@@ -3682,7 +3703,23 @@ display_debug_pubnames_worker (struct dwarf_section *section,
+ 
+       SAFE_BYTE_GET_AND_INC (names.pn_size, data, offset_size, end);
+ 
+-      start += names.pn_length + initial_length_size;
++      /* PR 17531: file: 7615b6b2.  */
++      if ((dwarf_signed_vma) names.pn_length < 0)
++	{
++	  warn (_("Negative length for public name: 0x%lx\n"), (long) names.pn_length);
++	  start = end;
++	}
++      else
++	start += names.pn_length + initial_length_size;
++
++      printf (_("  Length:                              %ld\n"),
++	      (long) names.pn_length);
++      printf (_("  Version:                             %d\n"),
++	      names.pn_version);
++      printf (_("  Offset into .debug_info section:     0x%lx\n"),
++	      (unsigned long) names.pn_offset);
++      printf (_("  Size of area in .debug_info section: %ld\n"),
++	      (long) names.pn_size);
+ 
+       if (names.pn_version != 2 && names.pn_version != 3)
+ 	{
+@@ -3697,15 +3734,6 @@ display_debug_pubnames_worker (struct dwarf_section *section,
+ 	  continue;
+ 	}
+ 
+-      printf (_("  Length:                              %ld\n"),
+-	      (long) names.pn_length);
+-      printf (_("  Version:                             %d\n"),
+-	      names.pn_version);
+-      printf (_("  Offset into .debug_info section:     0x%lx\n"),
+-	      (unsigned long) names.pn_offset);
+-      printf (_("  Size of area in .debug_info section: %ld\n"),
+-	      (long) names.pn_size);
+-
+       if (is_gnu)
+ 	printf (_("\n    Offset  Kind          Name\n"));
+       else
+@@ -5478,9 +5506,20 @@ read_cie (unsigned char *start, unsigned char *end,
+ 
+   if (augmentation_data_len)
+     {
+-      unsigned char *p, *q;
++      unsigned char *p;
++      unsigned char *q;
++      unsigned char *qend;
++      
+       p = (unsigned char *) fc->augmentation + 1;
+       q = augmentation_data;
++      qend = q + augmentation_data_len;
++
++      /* PR 17531: file: 015adfaa.  */
++      if (qend < q)
++	{
++	  warn (_("Negative augmentation data length: 0x%lx"), augmentation_data_len);
++	  augmentation_data_len = 0;
++	}
+ 
+       while (p < end && q < augmentation_data + augmentation_data_len)
+ 	{
+@@ -5496,6 +5535,13 @@ read_cie (unsigned char *start, unsigned char *end,
+ 	    break;
+ 	  p++;
+ 	}
++
++      if (q < qend)
++	{
++	  warn (_("Not enough augmentation data (%lx bytes still needed)\n"),
++		(augmentation_data + augmentation_data_len) - q);
++	  augmentation_data_len = q - augmentation_data;
++	}
+     }
+ 
+   *p_cie = fc;
+diff --git a/binutils/elfcomm.c b/binutils/elfcomm.c
+index 0cdcf63..0fdbcfb 100644
+--- a/binutils/elfcomm.c
++++ b/binutils/elfcomm.c
+@@ -655,6 +655,14 @@ setup_archive (struct archive_info *arch, const char *file_name,
+ 		 file_name, arch->longnames_size);
+ 	  return 1;
+ 	}
++      /* PR 17531: file: 639d6a26.  */
++      if ((signed long) arch->longnames_size < 0)
++	{
++	  error (_("%s: long name table is too big, (size = 0x%lx)\n"),
++		 file_name, arch->longnames_size);
++	  return 1;
++	}
++
+       arch->next_arhdr_offset += sizeof arch->arhdr + arch->longnames_size;
+ 
+       /* Plus one to allow for a string terminator.  */
+@@ -676,6 +684,8 @@ setup_archive (struct archive_info *arch, const char *file_name,
+ 
+       if ((arch->longnames_size & 1) != 0)
+ 	getc (file);
++
++      arch->longnames[arch->longnames_size] = 0;
+     }
+ 
+   return 0;

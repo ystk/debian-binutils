@@ -1,0 +1,729 @@
+# DP: PR binutils/17531: More fixes for invalid memory accesses
+# DP: triggered by fuzzed binaries (5860e3f883597cf6b8a937547015394edc1e8784).
+
+binutils/
+
+2014-12-22  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/17512
+	* archive.c (do_slurp_bsd_armap): Return if the parsed_size is
+	zero.
+	(bfd_slurp_armap): Zero terminate the name.
+	(bfd_generic_stat_arch_elt): If there is no header, fail.
+	* elf32-arc.c (arc_info_to_howto_rel): Replace BFD_ASSERT with
+	error message.
+	* elf32-avr.c (avr_info_to_howto_rela): Likewise.
+	* elf32-cr16c.c (elf_cr16c_info_to_howto_rel): Likewise.
+	* elf32-cris.c (cris_info_to_howto_rela): Likewise.
+	* elf32-d10v.c (d10v_info_to_howto_rel): Likewise.
+	* elf32-d30v.c (d30v_info_to_howto_rel): Likewise.
+	* elf32-dlx.c (dlx_rtype_to_howto): Likewise.
+	* elf32-epiphany.c (epiphany_info_to_howto_rela): Likewise.
+	* elf32-fr30.c (fr30_info_to_howto_rela): Likewise.
+	* elf32-frv.c (frv_info_to_howto_rela): Likewise.
+	* elf32-i960.c (elf32_i960_info_to_howto_rel): Likewise.
+	* elf32-ip2k.c (ip2k_info_to_howto_rela): Likewise.
+	* elf32-iq2000.c (iq2000_info_to_howto_rela): Likewise.
+	* elf32-lm32.c (lm32_info_to_howto_rela): Likewise.
+	* elf32-m32c.c (m32c_info_to_howto_rela): Likewise.
+	* elf32-m32r.c (m32r_info_to_howto_rel): Likewise.
+	* elf32-m68hc11.c (m68hc11_info_to_howto_rel): Likewise.
+	* elf32-m68hc12.c (m68hc11_info_to_howto_rel): Likewise.
+	* elf32-mep.c (mep_info_to_howto_rela): Likewise.
+	* elf32-metag.c (metag_info_to_howto_rela): Likewise.
+	* elf32-moxie.c (moxie_info_to_howto_rela): Likewise.
+	* elf32-msp430.c (msp430_info_to_howto_rela): Likewise.
+	* elf32-mt.c (mt_info_to_howto_rela): Likewise.
+	* elf32-nds32.c (nds32_info_to_howto_rel): Likewise.
+	* elf32-or1k.c (or1k_info_to_howto_rela): Likewise.
+	* elf32-rl78.c (rl78_info_to_howto_rela): Likewise.
+	* elf32-rx.c (rx_info_to_howto_rela): Likewise.
+	* elf32-v850.c (v850_elf_info_to_howto_rel): Likewise.
+	* elf32-xgate.c (xgate_info_to_howto_rel): Likewise.
+	* elf32-xtensa.c (elf_xtensa_info_to_howto_rela): Likewise.
+	* elf64-mmix.c (mmix_info_to_howto_rela): Likewise.
+	* elf64-x86-64.c (elf_x86_64_reloc_type_lookup): Likewise.
+	* elfnn-aarch64.c (elfNN_aarch64_bfd_reloc_from_type): Likewise.
+	* elf64-sparc.c (elf64_sparc_slurp_one_reloc_table): Add range
+	checking of reloc symbol index.
+	* reloc.c (bfd_generic_get_relocated_section_contents): Add range
+	checking of the reloc to be applied.
+	* vms-alpha.c (_bfd_vms_slurp_eisd): Add range checks.
+	(alpha_vms_object_p): Likewise.
+
+diff --git a/bfd/archive.c b/bfd/archive.c
+index 0ab4f6e..99096c3 100644
+--- a/bfd/archive.c
++++ b/bfd/archive.c
+@@ -902,6 +902,9 @@ do_slurp_bsd_armap (bfd *abfd)
+     return FALSE;
+   parsed_size = mapdata->parsed_size;
+   free (mapdata);
++  /* PR 17512: file: 883ff754.  */
++  if (parsed_size == 0)
++    return FALSE;
+ 
+   raw_armap = (bfd_byte *) bfd_zalloc (abfd, parsed_size);
+   if (raw_armap == NULL)
+@@ -917,7 +920,6 @@ do_slurp_bsd_armap (bfd *abfd)
+     }
+ 
+   ardata->symdef_count = H_GET_32 (abfd, raw_armap) / BSD_SYMDEF_SIZE;
+-
+   if (ardata->symdef_count * BSD_SYMDEF_SIZE >
+       parsed_size - BSD_SYMDEF_COUNT_SIZE)
+     {
+@@ -1138,6 +1140,7 @@ bfd_slurp_armap (bfd *abfd)
+ 	return FALSE;
+       if (bfd_seek (abfd, -(file_ptr) (sizeof (hdr) + 20), SEEK_CUR) != 0)
+ 	return FALSE;
++      extname[20] = 0;
+       if (CONST_STRNEQ (extname, "__.SYMDEF SORTED")
+ 	  || CONST_STRNEQ (extname, "__.SYMDEF"))
+ 	return do_slurp_bsd_armap (abfd);
+@@ -1971,7 +1974,9 @@ bfd_generic_stat_arch_elt (bfd *abfd, struct stat *buf)
+     }
+ 
+   hdr = arch_hdr (abfd);
+-
++  /* PR 17512: file: 3d9e9fe9.  */
++  if (hdr == NULL)
++    return -1;
+ #define foo(arelt, stelt, size)				\
+   buf->stelt = strtol (hdr->arelt, &aloser, size);	\
+   if (aloser == hdr->arelt)	      			\
+diff --git a/bfd/elf32-arc.c b/bfd/elf32-arc.c
+index e528e66..580e6d6 100644
+--- a/bfd/elf32-arc.c
++++ b/bfd/elf32-arc.c
+@@ -172,7 +172,11 @@ arc_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_ARC_max);
++  if (r_type >= (unsigned int) R_ARC_max)
++    {
++      _bfd_error_handler (_("%A: invalid ARC reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_arc_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-avr.c b/bfd/elf32-avr.c
+index 5aa3cf6..3d52940 100644
+--- a/bfd/elf32-avr.c
++++ b/bfd/elf32-avr.c
+@@ -859,7 +859,11 @@ avr_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_AVR_max);
++  if (r_type >= (unsigned int) R_AVR_max)
++    {
++      _bfd_error_handler (_("%A: invalid AVR reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_avr_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-cr16c.c b/bfd/elf32-cr16c.c
+index cf4503c..d8333e1 100644
+--- a/bfd/elf32-cr16c.c
++++ b/bfd/elf32-cr16c.c
+@@ -180,7 +180,11 @@ elf_cr16c_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+ {
+   unsigned int r_type = ELF32_R_TYPE (dst->r_info);
+ 
+-  BFD_ASSERT (r_type < (unsigned int) RINDEX_16C_MAX);
++  if (r_type >= RINDEX_16C_MAX)
++    {
++      _bfd_error_handler (_("%A; invalid CR16C reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-cris.c b/bfd/elf32-cris.c
+index c516b2f..0e9daba 100644
+--- a/bfd/elf32-cris.c
++++ b/bfd/elf32-cris.c
+@@ -461,7 +461,11 @@ cris_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
+   enum elf_cris_reloc_type r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_CRIS_max);
++  if (r_type >= R_CRIS_max)
++    {
++      _bfd_error_handler (_("%A: invalid CRIS reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & cris_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-d10v.c b/bfd/elf32-d10v.c
+index f45e2db..7aee695 100644
+--- a/bfd/elf32-d10v.c
++++ b/bfd/elf32-d10v.c
+@@ -228,7 +228,11 @@ d10v_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_D10V_max);
++  if (r_type >= (unsigned int) R_D10V_max)
++    {
++      _bfd_error_handler (_("%A: invalid D10V reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_d10v_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-d30v.c b/bfd/elf32-d30v.c
+index 211a673..830da01 100644
+--- a/bfd/elf32-d30v.c
++++ b/bfd/elf32-d30v.c
+@@ -516,7 +516,11 @@ d30v_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_D30V_max);
++  if (r_type >= (unsigned int) R_D30V_max)
++    {
++      _bfd_error_handler (_("%A: invalid D30V reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_d30v_howto_table[r_type];
+ }
+ 
+@@ -530,7 +534,11 @@ d30v_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_D30V_max);
++  if (r_type >= (unsigned int) R_D30V_max)
++    {
++      _bfd_error_handler (_("%A: invalid D30V reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_d30v_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-dlx.c b/bfd/elf32-dlx.c
+index 91441aa..c32f9df 100644
+--- a/bfd/elf32-dlx.c
++++ b/bfd/elf32-dlx.c
+@@ -546,7 +546,11 @@ dlx_rtype_to_howto (unsigned int r_type)
+     case R_DLX_RELOC_16_LO:
+       return & elf_dlx_reloc_16_lo;
+     default:
+-      BFD_ASSERT (r_type < (unsigned int) R_DLX_max);
++      if (r_type >= (unsigned int) R_DLX_max)
++	{
++	  _bfd_error_handler (_("Invalid DLX reloc number: %d"), r_type);
++	  r_type = 0;
++	}
+       return & dlx_elf_howto_table[r_type];
+     }
+ }
+diff --git a/bfd/elf32-epiphany.c b/bfd/elf32-epiphany.c
+index 8d95cc9..8985ba3 100644
+--- a/bfd/elf32-epiphany.c
++++ b/bfd/elf32-epiphany.c
+@@ -370,6 +370,11 @@ epiphany_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
++  if (r_type >= (unsigned int) R_EPIPHANY_max)
++    {
++      _bfd_error_handler (_("%A: invalid Epiphany reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & epiphany_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-fr30.c b/bfd/elf32-fr30.c
+index 022a0a9..9acf1e8 100644
+--- a/bfd/elf32-fr30.c
++++ b/bfd/elf32-fr30.c
+@@ -375,7 +375,11 @@ fr30_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_FR30_max);
++  if (r_type >= (unsigned int) R_FR30_max)
++    {
++      _bfd_error_handler (_("%A: invalid FR30 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & fr30_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-frv.c b/bfd/elf32-frv.c
+index 46f299b..adc5343 100644
+--- a/bfd/elf32-frv.c
++++ b/bfd/elf32-frv.c
+@@ -2557,6 +2557,11 @@ frv_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+       break;
+ 
+     default:
++      if (r_type >= (unsigned int) R_FRV_max)
++	{
++	  _bfd_error_handler (_("%A: invalid FRV reloc number: %d"), abfd, r_type);
++	  r_type = 0;
++	}
+       cache_ptr->howto = & elf32_frv_howto_table [r_type];
+       break;
+     }
+diff --git a/bfd/elf32-i960.c b/bfd/elf32-i960.c
+index c6fbbb8..1ac89c3 100644
+--- a/bfd/elf32-i960.c
++++ b/bfd/elf32-i960.c
+@@ -132,7 +132,13 @@ elf32_i960_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   enum elf_i960_reloc_type type;
+ 
+   type = (enum elf_i960_reloc_type) ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (type < R_960_max);
++
++  /* PR 17521: file: 9609b8d6.  */
++  if (type >= R_960_max)
++    {
++      _bfd_error_handler (_("%A; invalid i960 reloc number: %d"), abfd, type);
++      type = 0;
++    }
+ 
+   cache_ptr->howto = &elf_howto_table[(int) type];
+ }
+diff --git a/bfd/elf32-ip2k.c b/bfd/elf32-ip2k.c
+index 79e1ecc..b77fd22 100644
+--- a/bfd/elf32-ip2k.c
++++ b/bfd/elf32-ip2k.c
+@@ -1239,6 +1239,11 @@ ip2k_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
++  if (r_type >= (unsigned int) R_IP2K_max)
++    {
++      _bfd_error_handler (_("%A: invalid IP2K reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & ip2k_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-iq2000.c b/bfd/elf32-iq2000.c
+index a6bf8d2..75f50a2 100644
+--- a/bfd/elf32-iq2000.c
++++ b/bfd/elf32-iq2000.c
+@@ -435,6 +435,11 @@ iq2000_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
+       break;
+ 
+     default:
++      if (r_type >= (unsigned int) R_IQ2000_max)
++	{
++	  _bfd_error_handler (_("%A: invalid IQ2000 reloc number: %d"), abfd, r_type);
++	  r_type = 0;
++	}
+       cache_ptr->howto = & iq2000_elf_howto_table [r_type];
+       break;
+     }
+diff --git a/bfd/elf32-lm32.c b/bfd/elf32-lm32.c
+index 5f2b6b8..67583bb 100644
+--- a/bfd/elf32-lm32.c
++++ b/bfd/elf32-lm32.c
+@@ -588,7 +588,11 @@ lm32_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_LM32_max);
++  if (r_type >= (unsigned int) R_LM32_max)
++    {
++      _bfd_error_handler (_("%A: invalid LM32 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &lm32_elf_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-m32c.c b/bfd/elf32-m32c.c
+index 3e2c802..b56968c 100644
+--- a/bfd/elf32-m32c.c
++++ b/bfd/elf32-m32c.c
+@@ -297,7 +297,11 @@ m32c_info_to_howto_rela
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_M32C_max);
++  if (r_type >= (unsigned int) R_M32C_max)
++    {
++      _bfd_error_handler (_("%A: invalid M32C reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & m32c_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-m32r.c b/bfd/elf32-m32r.c
+index e6b45ab..5f03e8b 100644
+--- a/bfd/elf32-m32r.c
++++ b/bfd/elf32-m32r.c
+@@ -1280,7 +1280,11 @@ m32r_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (ELF32_R_TYPE(dst->r_info) <= (unsigned int) R_M32R_GNU_VTENTRY);
++  if (r_type > (unsigned int) R_M32R_GNU_VTENTRY)
++    {
++      _bfd_error_handler (_("%A: invalid M32R reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &m32r_elf_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-m68hc11.c b/bfd/elf32-m68hc11.c
+index 2101bdf..02cd5bd 100644
+--- a/bfd/elf32-m68hc11.c
++++ b/bfd/elf32-m68hc11.c
+@@ -384,7 +384,11 @@ m68hc11_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_M68HC11_max);
++  if (r_type >= (unsigned int) R_M68HC11_max)
++    {
++      _bfd_error_handler (_("%A: invalid M68HC11 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_m68hc11_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-m68hc12.c b/bfd/elf32-m68hc12.c
+index 7f48b7e..d32cf25 100644
+--- a/bfd/elf32-m68hc12.c
++++ b/bfd/elf32-m68hc12.c
+@@ -504,7 +504,11 @@ m68hc11_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_M68HC11_max);
++  if (r_type >= (unsigned int) R_M68HC11_max)
++    {
++      _bfd_error_handler (_("%A: invalid M68HC12 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_m68hc11_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-mep.c b/bfd/elf32-mep.c
+index 548359f..600a60d 100644
+--- a/bfd/elf32-mep.c
++++ b/bfd/elf32-mep.c
+@@ -400,6 +400,11 @@ mep_info_to_howto_rela
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
++  if (r_type >= R_MEP_max)
++    {
++      _bfd_error_handler (_("%A: invalid MEP reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & mep_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-metag.c b/bfd/elf32-metag.c
+index a68b51c..9d2f72a 100644
+--- a/bfd/elf32-metag.c
++++ b/bfd/elf32-metag.c
+@@ -896,7 +896,11 @@ metag_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_METAG_MAX);
++  if (r_type >= (unsigned int) R_METAG_MAX)
++    {
++      _bfd_error_handler (_("%A: invalid METAG reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & elf_metag_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-moxie.c b/bfd/elf32-moxie.c
+index 1f685b9..56c054b 100644
+--- a/bfd/elf32-moxie.c
++++ b/bfd/elf32-moxie.c
+@@ -131,7 +131,11 @@ moxie_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_MOXIE_max);
++  if (r_type >= (unsigned int) R_MOXIE_max)
++    {
++      _bfd_error_handler (_("%A: invalid Moxie reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & moxie_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-msp430.c b/bfd/elf32-msp430.c
+index 2f55c53..0280db0 100644
+--- a/bfd/elf32-msp430.c
++++ b/bfd/elf32-msp430.c
+@@ -617,12 +617,20 @@ msp430_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
+ 
+   if (uses_msp430x_relocs (abfd))
+     {
+-      BFD_ASSERT (r_type < (unsigned int) R_MSP430x_max);
++      if (r_type >= (unsigned int) R_MSP430x_max)
++	{
++	  _bfd_error_handler (_("%A: invalid MSP430X reloc number: %d"), abfd, r_type);
++	  r_type = 0;
++	}
+       cache_ptr->howto = elf_msp430x_howto_table + r_type;
+       return;
+     }
+ 
+-  BFD_ASSERT (r_type < (unsigned int) R_MSP430_max);
++  if (r_type >= (unsigned int) R_MSP430_max)
++    {
++      _bfd_error_handler (_("%A: invalid MSP430 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_msp430_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-mt.c b/bfd/elf32-mt.c
+index 6df1521..f6e45a7 100644
+--- a/bfd/elf32-mt.c
++++ b/bfd/elf32-mt.c
+@@ -236,6 +236,11 @@ mt_info_to_howto_rela
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
++  if (r_type >= (unsigned int) R_MT_max)
++    {
++      _bfd_error_handler (_("%A: invalid MT reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & mt_elf_howto_table [r_type];
+ }
+ 
+diff --git a/bfd/elf32-nds32.c b/bfd/elf32-nds32.c
+index 2b63024..5f11eda 100644
+--- a/bfd/elf32-nds32.c
++++ b/bfd/elf32-nds32.c
+@@ -2965,7 +2965,11 @@ nds32_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED, arelent *cache_ptr,
+   enum elf_nds32_reloc_type r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (ELF32_R_TYPE (dst->r_info) <= R_NDS32_GNU_VTENTRY);
++  if (r_type > R_NDS32_GNU_VTENTRY)
++    {
++      _bfd_error_handler (_("%A: invalid NDS32 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = bfd_elf32_bfd_reloc_type_table_lookup (r_type);
+ }
+ 
+diff --git a/bfd/elf32-or1k.c b/bfd/elf32-or1k.c
+index e5b7bad..99c9704 100644
+--- a/bfd/elf32-or1k.c
++++ b/bfd/elf32-or1k.c
+@@ -738,7 +738,11 @@ or1k_info_to_howto_rela (bfd * abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_OR1K_max);
++  if (r_type >= (unsigned int) R_OR1K_max)
++    {
++      _bfd_error_handler (_("%A: invalid OR1K reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = & or1k_elf_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-rl78.c b/bfd/elf32-rl78.c
+index 2a5ec99..53c4f87 100644
+--- a/bfd/elf32-rl78.c
++++ b/bfd/elf32-rl78.c
+@@ -276,7 +276,11 @@ rl78_info_to_howto_rela (bfd *               abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_RL78_max);
++  if (r_type >= (unsigned int) R_RL78_max)
++    {
++      _bfd_error_handler (_("%A: invalid RL78 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = rl78_elf_howto_table + r_type;
+ }
+ 
+diff --git a/bfd/elf32-rx.c b/bfd/elf32-rx.c
+index 5d09f21..9a8df1c 100644
+--- a/bfd/elf32-rx.c
++++ b/bfd/elf32-rx.c
+@@ -307,7 +307,11 @@ rx_info_to_howto_rela (bfd *               abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_RX_max);
++  if (r_type >= (unsigned int) R_RX_max)
++    {
++      _bfd_error_handler (_("%A: invalid RX reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = rx_elf_howto_table + r_type;
+ }
+ 
+diff --git a/bfd/elf32-v850.c b/bfd/elf32-v850.c
+index 2589a25..dd3a218 100644
+--- a/bfd/elf32-v850.c
++++ b/bfd/elf32-v850.c
+@@ -1896,7 +1896,11 @@ v850_elf_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_V850_max);
++  if (r_type >= (unsigned int) R_V850_max)
++    {
++      _bfd_error_handler (_("%A: invalid V850 reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &v850_elf_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-xgate.c b/bfd/elf32-xgate.c
+index 01f39fa..9de5c65 100644
+--- a/bfd/elf32-xgate.c
++++ b/bfd/elf32-xgate.c
+@@ -422,7 +422,11 @@ xgate_info_to_howto_rel (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF32_R_TYPE (dst->r_info);
+-  BFD_ASSERT(r_type < (unsigned int) R_XGATE_max);
++  if (r_type >= (unsigned int) R_XGATE_max)
++    {
++      _bfd_error_handler (_("%A: invalid XGate reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_xgate_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf32-xtensa.c b/bfd/elf32-xtensa.c
+index e32496a..85280e4 100644
+--- a/bfd/elf32-xtensa.c
++++ b/bfd/elf32-xtensa.c
+@@ -479,7 +479,11 @@ elf_xtensa_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+ {
+   unsigned int r_type = ELF32_R_TYPE (dst->r_info);
+ 
+-  BFD_ASSERT (r_type < (unsigned int) R_XTENSA_max);
++  if (r_type >= (unsigned int) R_XTENSA_max)
++    {
++      _bfd_error_handler (_("%A: invalid XTENSA reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf64-mmix.c b/bfd/elf64-mmix.c
+index 58fca92..3b5665c 100644
+--- a/bfd/elf64-mmix.c
++++ b/bfd/elf64-mmix.c
+@@ -1259,7 +1259,11 @@ mmix_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+   unsigned int r_type;
+ 
+   r_type = ELF64_R_TYPE (dst->r_info);
+-  BFD_ASSERT (r_type < (unsigned int) R_MMIX_max);
++  if (r_type >= (unsigned int) R_MMIX_max)
++    {
++      _bfd_error_handler (_("%A: invalid MMIX reloc number: %d"), abfd, r_type);
++      r_type = 0;
++    }
+   cache_ptr->howto = &elf_mmix_howto_table[r_type];
+ }
+ 
+diff --git a/bfd/elf64-sparc.c b/bfd/elf64-sparc.c
+index eeb94a9..0dcd14a 100644
+--- a/bfd/elf64-sparc.c
++++ b/bfd/elf64-sparc.c
+@@ -97,7 +97,9 @@ elf64_sparc_slurp_one_reloc_table (bfd *abfd, asection *asect,
+       else
+ 	relent->address = rela.r_offset - asect->vma;
+ 
+-      if (ELF64_R_SYM (rela.r_info) == STN_UNDEF)
++      if (ELF64_R_SYM (rela.r_info) == STN_UNDEF
++	  /* PR 17512: file: 996185f8.  */
++	  || ELF64_R_SYM (rela.r_info) > bfd_get_symcount (abfd))
+ 	relent->sym_ptr_ptr = bfd_abs_section_ptr->symbol_ptr_ptr;
+       else
+ 	{
+diff --git a/bfd/elf64-x86-64.c b/bfd/elf64-x86-64.c
+index 4aff9b0..bfb2f2a 100644
+--- a/bfd/elf64-x86-64.c
++++ b/bfd/elf64-x86-64.c
+@@ -302,7 +302,7 @@ elf_x86_64_reloc_type_lookup (bfd *abfd,
+ 	return elf_x86_64_rtype_to_howto (abfd,
+ 					  x86_64_reloc_map[i].elf_reloc_val);
+     }
+-  return 0;
++  return NULL;
+ }
+ 
+ static reloc_howto_type *
+diff --git a/bfd/elfnn-aarch64.c b/bfd/elfnn-aarch64.c
+index 4f0e0c6..a2dcb72 100644
+--- a/bfd/elfnn-aarch64.c
++++ b/bfd/elfnn-aarch64.c
+@@ -1431,6 +1431,14 @@ elfNN_aarch64_bfd_reloc_from_type (unsigned int r_type)
+   if (r_type == R_AARCH64_NONE || r_type == R_AARCH64_NULL)
+     return BFD_RELOC_AARCH64_NONE;
+ 
++  /* PR 17512: file: b371e70a.  */
++  if (r_type >= R_AARCH64_end)
++    {
++      _bfd_error_handler (_("Invalid AArch64 reloc number: %d"), r_type);
++      bfd_set_error (bfd_error_bad_value);
++      return BFD_RELOC_AARCH64_NONE;
++    }
++
+   return BFD_RELOC_AARCH64_RELOC_START + offsets[r_type];
+ }
+ 
+diff --git a/bfd/reloc.c b/bfd/reloc.c
+index d902a9b..1677e86 100644
+--- a/bfd/reloc.c
++++ b/bfd/reloc.c
+@@ -7623,6 +7623,10 @@ bfd_generic_get_relocated_section_contents (bfd *abfd,
+ 	      (*parent)->howto = &none_howto;
+ 	      r = bfd_reloc_ok;
+ 	    }
++	  /* PR 17512: file: c146ab8b.  */
++	  else if ((*parent)->address * bfd_octets_per_byte (abfd)
++		   >= bfd_get_section_size (input_section))
++	    r = bfd_reloc_outofrange;
+ 	  else
+ 	    r = bfd_perform_relocation (input_bfd,
+ 					*parent,
+diff --git a/bfd/vms-alpha.c b/bfd/vms-alpha.c
+index 8c24ef0..0e80960 100644
+--- a/bfd/vms-alpha.c
++++ b/bfd/vms-alpha.c
+@@ -521,9 +521,11 @@ _bfd_vms_slurp_eisd (bfd *abfd, unsigned int offset)
+       asection *section;
+       flagword bfd_flags;
+ 
++      /* PR 17512: file: 3d9e9fe9.  */
++      if (offset >= PRIV (recrd.rec_size))
++	return FALSE;
+       eisd = (struct vms_eisd *)(PRIV (recrd.rec) + offset);
+       rec_size = bfd_getl32 (eisd->eisdsize);
+-
+       if (rec_size == 0)
+         break;
+ 
+@@ -2527,6 +2529,9 @@ alpha_vms_object_p (bfd *abfd)
+       /* Reset the record pointer.  */
+       PRIV (recrd.rec) = buf;
+ 
++      /* PR 17512: file: 7d7c57c2.  */
++      if (PRIV (recrd.rec_size) < sizeof (struct vms_eihd))
++	goto error_ret;
+       vms_debug2 ((2, "file type is image\n"));
+ 
+       if (_bfd_vms_slurp_eihd (abfd, &eisd_offset, &eihs_offset) != TRUE)

@@ -1,0 +1,49 @@
+# DP: Fix PR gas/17493.
+
+--- a/gas/config/tc-i386.c	
++++ a/gas/config/tc-i386.c	
+@@ -7985,7 +7985,7 @@ i386_finalize_immediate (segT exp_seg ATTRIBUTE_UNUSED, expressionS *exp,
+       return 0;
+     }
+ #endif
+-  else if (!intel_syntax && exp->X_op == O_register)
++  else if (!intel_syntax && exp_seg == reg_section)
+     {
+       if (imm_start)
+ 	as_bad (_("illegal immediate register operand %s"), imm_start);
+--- a/gas/testsuite/gas/i386/inval-equ-2.l	
++++ a/gas/testsuite/gas/i386/inval-equ-2.l	
+@@ -7,15 +7,15 @@ GAS LISTING .*
+ 
+ [ 	]*1[ 	]+\.globl  bar1
+ [ 	]*2[ 	]+\.set    bar1,\(%eax\+1\)
+-[ 	]*3[ 	]+\?\?\?\? A12A0000 		mov bar1,%eax
+-[ 	]*3[ 	]+00
++[ 	]*3[ 	]+\?\?\?\? A1...... 		mov bar1,%eax
++[ 	]*3[ 	]+..
+ [ 	]*4[ 	]+\.set    bar2,\(%eax\+1\)
+-[ 	]*5[ 	]+\?\?\?\? A12A0000 		mov bar2,%eax
+-[ 	]*5[ 	]+00
++[ 	]*5[ 	]+\?\?\?\? A1...... 		mov bar2,%eax
++[ 	]*5[ 	]+..
+ [ 	]*6[ 	]+\.globl  bar2
+ [ 	]*7[ 	]+\.set    bar3,\(%eax\+1\)
+-[ 	]*8[ 	]+\?\?\?\? A12A0000 		mov bar3,%eax
++[ 	]*8[ 	]+\?\?\?\? A1...... 		mov bar3,%eax
+ .*  Error: can't make global register symbol `bar1'
+ .*  Error: can't make global register symbol `bar2'
+ .*  Error: can't make global register symbol `bar3'
+-[ 	]*8[ 	]+00
++[ 	]*8[ 	]+..
+--- a/gas/write.c	
++++ a/gas/write.c	
+@@ -836,7 +836,8 @@ adjust_reloc_syms (bfd *abfd ATTRIBUTE_UNUSED,
+ 	if (symsec == NULL)
+ 	  abort ();
+ 
+-	if (bfd_is_abs_section (symsec))
++	if (bfd_is_abs_section (symsec)
++	    || symsec == reg_section)
+ 	  {
+ 	    /* The fixup_segment routine normally will not use this
+ 	       symbol in a relocation.  */

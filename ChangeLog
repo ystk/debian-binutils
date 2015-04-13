@@ -1,3 +1,30 @@
+2014-10-15  Tristan Gingold  <gingold@adacore.com>
+
+	* src-release.sh (do_proto_toplev): Configure with --target.
+
+2014-10-03  Jing Yu  <jingyu@google.com>
+
+	* configure.ac: Add aarch64 to list of targets that support gold.
+	* configure: Regenerate.
+
+2014-09-12  Andrew Bennett  <andrew.bennett@imgtec.com>
+
+	* configure.ac: Add mips*-img-elf* target triple.
+	* configure: Regenerate.
+
+2014-09-06  Kuan-Lin Chen  <kuanlinchentw@gmail.com>
+	* configure: Disable gdb for nds32*-*-* until supported.
+	* configure.ac: Disable gdb for nds32*-*-* until supported.
+
+2014-09-05  Joel Brobecker  <brobecker@adacore.com>
+
+	* configure: Regenerate.
+
+2014-08-27  Will Newton  <will.newton@linaro.org>
+
+	* src-release.sh: New file.
+	* src-release: Remove file.
+
 2014-07-27  Joel Sherrill <joel.sherrill@oarcorp.com>
 
 	GDB not supported for or1k*-*-rtems*

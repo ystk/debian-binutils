@@ -2474,10 +2474,7 @@ alpha_vms_object_p (bfd *abfd)
   PRIV (recrd.rec) = buf;
 
   if (bfd_bread (buf, test_len, abfd) != test_len)
-    {
-      bfd_set_error (bfd_error_file_truncated);
-      goto error_ret;
-    }
+    goto err_wrong_format;
 
   /* Is it an image?  */
   if ((bfd_getl32 (buf) == EIHD__K_MAJORID)
@@ -2502,7 +2499,6 @@ alpha_vms_object_p (bfd *abfd)
           if (buf == NULL)
             {
               PRIV (recrd.buf) = NULL;
-              bfd_set_error (bfd_error_no_memory);
               goto error_ret;
             }
           PRIV (recrd.buf) = buf;
@@ -2517,10 +2513,7 @@ alpha_vms_object_p (bfd *abfd)
       while (remaining > 0)
         {
           if (bfd_bread (buf + read_so_far, to_read, abfd) != to_read)
-            {
-              bfd_set_error (bfd_error_file_truncated);
-              goto err_wrong_format;
-            }
+	    goto err_wrong_format;
 
           read_so_far += to_read;
           remaining -= to_read;
@@ -4582,10 +4575,14 @@ module_find_nearest_line (bfd *abfd, struct module *module, bfd_vma addr,
    location.  */
 
 static bfd_boolean
-_bfd_vms_find_nearest_dst_line (bfd *abfd, asection *section,
-				asymbol **symbols ATTRIBUTE_UNUSED,
-				bfd_vma offset, const char **file,
-				const char **func, unsigned int *line)
+_bfd_vms_find_nearest_line (bfd *abfd,
+			    asymbol **symbols ATTRIBUTE_UNUSED,
+			    asection *section,
+			    bfd_vma offset,
+			    const char **file,
+			    const char **func,
+			    unsigned int *line,
+			    unsigned int *discriminator)
 {
   struct module *module;
 
@@ -4595,6 +4592,8 @@ _bfd_vms_find_nearest_dst_line (bfd *abfd, asection *section,
   *file = NULL;
   *func = NULL;
   *line = 0;
+  if (discriminator)
+    *discriminator = 0;
 
   /* We can't do anything if there is no DST (debug symbol table).  */
   if (PRIV (dst_section) == NULL)
@@ -4614,26 +4613,6 @@ _bfd_vms_find_nearest_dst_line (bfd *abfd, asection *section,
 
   return FALSE;
 }
-
-/* Likewise but with a discriminator.  */
-
-static bfd_boolean
-_bfd_vms_find_nearest_line_discriminator (bfd *abfd,
-					  asection *section,
-					  asymbol **symbols,
-					  bfd_vma offset,
-					  const char **filename_ptr,
-					  const char **functionname_ptr,
-					  unsigned int *line_ptr,
-					  unsigned int *discriminator)
-{
-  *discriminator = 0;
-
-  return _bfd_vms_find_nearest_dst_line (abfd, section, symbols, offset,
-					 filename_ptr, functionname_ptr,
-					 line_ptr);
-}
-
 
 /* Canonicalizations.  */
 /* Set name, value, section and flags of SYM from E.  */
@@ -9214,9 +9193,8 @@ bfd_vms_get_data (bfd *abfd)
 #define alpha_vms_get_lineno               _bfd_nosymbols_get_lineno
 #define alpha_vms_find_inliner_info        _bfd_nosymbols_find_inliner_info
 #define alpha_vms_bfd_make_debug_symbol    _bfd_nosymbols_bfd_make_debug_symbol
-#define alpha_vms_find_nearest_line        _bfd_vms_find_nearest_dst_line
-#define _bfd_generic_find_nearest_line_discriminator \
-  _bfd_vms_find_nearest_line_discriminator
+#define alpha_vms_find_nearest_line        _bfd_vms_find_nearest_line
+#define alpha_vms_find_line                _bfd_nosymbols_find_line
 #define alpha_vms_bfd_is_local_label_name  vms_bfd_is_local_label_name
 
 /* Generic table.  */

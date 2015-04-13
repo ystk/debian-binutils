@@ -3,8 +3,8 @@
 # Based on sample debian/rules file - for GNU Hello (1.3).
 # Copyright 1994,1995 by Ian Jackson.
 # Copyright 1998-2007 James Troup.
-# Portions Copyright 2008-2012 Canonical Ltd.
-# Portions Copyright 2008-2013 Matthias Klose.
+# Portions Copyright 2008-2014 Canonical Ltd.
+# Portions Copyright 2008-2014 Matthias Klose.
 # I hereby give you perpetual unlimited permission to copy,
 # modify and relicense this file, provided that you do not remove
 # my name from the file itself.  (I assert my moral right of
@@ -90,7 +90,7 @@ endif
 SHELL  = /bin/bash
 
 gold_targets = \
-	amd64 armel armhf i386 \
+	amd64 arm64 armel armhf i386 \
 	mips mipsel mipsn32 mipsn32el mips64 mips64el \
 	powerpc powerpcspe ppc64 ppc64el \
 	sparc sparc64 x32 hurd-i386
@@ -144,8 +144,12 @@ DEB_UPSTREAM	:= $(firstword $(subst -,$(SPACE),$(DEB_VERSION)))
 VERSION		:= $(shell sed -n 's/^ *VERSION=\(.*\)/\1/p' bfd/configure | head -1 | tr -d \')
 DATE		:= $(shell sed -n 's/.* \([0-9]*\)$$/\1/p' bfd/version.h)
 ifneq (,$(DATE))
-  DATE_EXT	:= .$(DATE)
+#  DATE_EXT	:= .$(DATE)
 endif
+BUILD_DATE := $(shell dpkg-parsechangelog | sed -n -e 's/^Date: //p')
+
+is_rc = yes
+is_rc =
 
 ifneq ($(DEB_UPSTREAM),$(VERSION)$(DATE_EXT))
   $(error upstream ($(DEB_UPSTREAM)) and debian ($(VERSION)$(DATE_EXT)) version mismatch)
@@ -201,6 +205,7 @@ gfdl_generated_files = \
 CONFARGS = \
 	--enable-shared \
 	--enable-plugins \
+	--enable-threads \
 	--prefix=/$(PF) \
 	--build=$(DEB_BUILD_GNU_TYPE) \
 	--host=$(DEB_HOST_GNU_TYPE) \
@@ -270,6 +275,9 @@ ifeq ($(DEB_TARGET_ARCH),powerpc)
 	CONFARGS += --enable-targets=powerpc64-linux-gnu
 endif
 ifeq ($(DEB_TARGET_ARCH),ppc64)
+	CONFARGS += --enable-targets=powerpc-linux-gnu
+endif
+ifeq ($(DEB_TARGET_ARCH),ppc64el)
 	CONFARGS += --enable-targets=powerpc-linux-gnu
 endif
 ifeq ($(DEB_TARGET_ARCH),s390)
@@ -436,9 +444,11 @@ endif
 build-single-stamp: configure-single-stamp
 	$(checkdir)
 	env MAKE="$(MAKE) VERSION=$(SINGLE_VERSION)" \
-	    $(MAKE) -C builddir-single/bfd headers
+	    $(MAKE) -C builddir-single/bfd headers \
+		LDFLAGS="-Wl,-z,relro"
 	env MAKE="$(MAKE) VERSION=$(SINGLE_VERSION)" \
-	    $(MAKE) $(NJOBS) -C builddir-single
+	    $(MAKE) $(NJOBS) -C builddir-single \
+		LDFLAGS="-Wl,-z,relro"
 ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
 ifeq ($(with_check),yes)
 	-env MAKE="$(MAKE) VERSION=$(SINGLE_VERSION)" \
@@ -502,6 +512,11 @@ multiarch_targets = \
 	m32r-linux-gnu \
 	x86_64-pep
 
+# try to work around #758830
+ifeq ($(DEB_HOST_ARCH),sh4)
+  multiarch_targets := $(filter-out hppa-linux-gnu, $(multiarch_targets))
+endif
+
 configure-multi-stamp: patch-stamp
 	$(checkdir)
 	rm -rf configure-multi-stamp \
@@ -518,7 +533,8 @@ build-multi-stamp: configure-multi-stamp
 	$(checkdir)
 	$(MAKE) -C builddir-multi/bfd headers
 	env MAKE="$(MAKE) VERSION=$(MULTI_VERSION)" \
-	  $(MAKE) $(NJOBS) -C builddir-multi
+	  $(MAKE) $(NJOBS) -C builddir-multi \
+		LDFLAGS="-Wl,-z,relro"
 	touch build-multi-stamp
 
 ###############################################################################
@@ -730,6 +746,11 @@ ifeq ($(with_multiarch),yes)
 	$(call strip_package, $(p_mul), $(d_mul))
 endif
 
+	if which strip-nondeterminism >/dev/null 2>&1; then \
+	  find $(d_dev) -name '*.a' -print0 \
+	    | xargs -0r strip-nondeterminism --type ar; \
+	fi
+
 	: # Don't want /usr/<arch>-linux to exist in any package
 	rm -rf $(d_bin)/$(PF)/$(DEB_HOST_GNU_TYPE)
 
@@ -900,24 +921,28 @@ ifneq ($(BACKPORT),true)
 	for i in bfd gas gprof ld; do \
 	  ln -sf ../$(p_bin)/$$i $(d_doc)/$(PF)/share/doc/$(p_doc)/$$i; \
 	done
-	find $(d_doc)/$(PF)/share/doc/$(p_doc) -maxdepth 1 -type f ! -name copyright | xargs gzip -9
-	gzip -9 $(d_doc)/$(PF)/share/info/*
+	find $(d_doc)/$(PF)/share/doc/$(p_doc) -maxdepth 1 -type f ! -name copyright | xargs gzip -9n
+	gzip -9n $(d_doc)/$(PF)/share/info/*
 
 	dpkg-gencontrol -isp -P$(d_doc) -p$(p_doc)
 	chown -R root:root $(d_doc)
 	chmod -R go=rX  $(d_doc)
+	find $(d_doc) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_doc) ..
 
 	$(install_dir) $(d_src)/$(PF)/share/doc/$(p_src)/
 	$(install_file)	debian/changelog $(d_src)/$(PF)/share/doc/$(p_src)/changelog.Debian
 	$(install_file)	debian/copyright $(d_src)/$(PF)/share/doc/$(p_src)/
-	find $(d_src)/$(PF)/share/doc/$(p_src) -maxdepth 1 -type f ! -name copyright | xargs gzip -9
+	find $(d_src)/$(PF)/share/doc/$(p_src) -maxdepth 1 -type f ! -name copyright | xargs gzip -9n
 endif # ifndef BACKPORT
 
 	$(install_dir) $(d_src)/DEBIAN
 	$(install_dir) $(d_src)/$(PF)/src/binutils/patches
 	$(install_file) debian/patches/* $(d_src)/$(PF)/src/binutils/patches/
-	tar -c --xz -C .. --exclude=CVS \
+	cd .. && find $(sources_files) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)' && \
+		find $(source_files) -type f -print0 | LC_ALL=C sort -z | tar --null -T - -c --xz --exclude=CVS \
 		-f $(pwd)/$(d_src)/$(PF)/src/binutils/binutils-$(VERSION).tar.xz \
 		$(source_files)
 
@@ -935,6 +960,8 @@ endif # ifndef BACKPORT
 	dpkg-gencontrol -isp -P$(d_src) -p$(p_src)
 	chown -R root:root $(d_src)
 	chmod -R go=rX  $(d_src)
+	find $(d_src) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_src) ..
 
 endif
@@ -960,7 +987,7 @@ ifneq (,$(TARGET))
 	$(install_dir) $(d_cross)/$(PF)/share/doc/$(p_cross)/
 	$(install_file)	debian/changelog $(d_cross)/$(PF)/share/doc/$(p_cross)/changelog.Debian
 	$(install_file)	debian/copyright debian/README.cross $(d_cross)/$(PF)/share/doc/$(p_cross)/
-	gzip -9f $(d_cross)/$(PF)/share/doc/$(p_cross)/changelog.Debian
+	gzip -9nf $(d_cross)/$(PF)/share/doc/$(p_cross)/changelog.Debian
 
 	for pkg in bfd gas gprof ld; do \
 	  ln -sf ../binutils/$$pkg $(d_cross)/$(PF)/share/doc/$(p_cross)/$$pkg; \
@@ -970,19 +997,27 @@ ifneq (,$(TARGET))
 	dpkg-shlibdeps $(d_cross)/$(PF)/bin/*
 	dpkg-gencontrol -isp -P$(d_cross) -p$(p_cross) \
 		-VBuilt-Using="$(shell dpkg-query -f '$${source:Package} (= $${source:Version}), ' -W binutils-source)"
+	find $(d_cross) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_cross) ..
 
 else
 	: # generate some control & helper files
-	nver=$$(echo $(DEB_UPSTREAM) | awk -F. '{ OFS="."; $$NF=$$NF+1; print }'); \
+	if [ "$(is_rc)" = yes ]; then \
+	  nver=$$(echo $(DEB_UPSTREAM) | awk -F. '{ OFS="."; NF--; $$NF=$$NF+1; print }'); \
+	else \
+	  nver=$$(echo $(DEB_UPSTREAM) | awk -F. '{ OFS="."; $$NF=$$NF+1; print }'); \
+	fi; \
 	for i in debian/*.in; do \
 	    case "$$i" in debian/control.cross.in) continue; esac; \
+	    date_ext=$(DATE_EXT); \
+	    case "$$i" in debian/*.shlibs.in) [ "$(is_rc)" = yes ] && date_ext=; esac; \
 	    sed -e 's/@VER@/$(VERSION)/g' \
 		-e 's/@DEB_VER@/$(DEB_VERSION)/g' \
 		-e 's/@DEB_SVER@/$(DEB_SVERSION)/g' \
 		-e 's/@DEB_UVER@/$(DEB_UPSTREAM)/g' \
 		-e "s/@DEB_NVER@/$$nver/g" \
-		-e 's/@DATE_EXT@/$(DATE_EXT)/g' \
+		-e "s/@DATE_EXT@/$$date_ext/g" \
 		-e 's/@DEB_ARCH@/$(DEB_HOST_ARCH)/g' \
 		-e "s/@dpkg_dev@/$(DPKG_DEV)/" \
 		$$i > $${i%*.in}; \
@@ -1007,8 +1042,8 @@ endif
 ifeq ($(with_multiarch),yes)
 	$(install_file) -D debian/$(p_mul).overrides \
 		$(d_mul)/$(PF)/share/lintian/overrides/$(p_mul)
-#	$(install_file) -D debian/$(p_mdev).overrides \
-#		$(d_mdev)/$(PF)/share/lintian/overrides/$(p_mdev)
+	$(install_file) -D debian/$(p_mdev).overrides \
+		$(d_mdev)/$(PF)/share/lintian/overrides/$(p_mdev)
 endif
 ifeq ($(DEB_HOST_ARCH),hppa)
 	$(install_file) -D debian/$(p_hppa64).overrides \
@@ -1090,53 +1125,63 @@ endif
 	$(install_file) gprof/bbconv.pl $(d_bin)/$(PF)/share/doc/$(p_bin)/gprof/.
 
 	: # Compress stuff that needs it
-	gzip -9 $(d_bin)/$(PF)/share/man/man1/*.1
-	find $(d_bin)/$(PF)/share/doc/$(p_bin)/ -type f ! -name copyright -a ! -name bbconv.pl | xargs gzip -9
+	gzip -9n $(d_bin)/$(PF)/share/man/man1/*.1
+	find $(d_bin)/$(PF)/share/doc/$(p_bin)/ -type f ! -name copyright -a ! -name bbconv.pl | xargs gzip -9n
 
 	: # Finish it all up
 	find $(d_bin) -type f | xargs file | grep ELF | cut -d: -f 1 | xargs dpkg-shlibdeps
 	dpkg-gencontrol -isp -P$(d_bin) -p$(p_bin) $(CONFLICTS) $(gold_provides)
-	cd $(d_bin) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | xargs md5sum > DEBIAN/md5sums
+	cd $(d_bin) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | LC_ALL=C sort | xargs md5sum > DEBIAN/md5sums
 
 	rm -f debian/substvars
 	dpkg-gencontrol -isp -P$(d_dev) -p$(p_dev)
-	cd $(d_dev) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | xargs md5sum > DEBIAN/md5sums
+	cd $(d_dev) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | LC_ALL=C sort | xargs md5sum > DEBIAN/md5sums
 
 ifeq ($(with_multiarch),yes)
 	rm -f debian/substvars
 	find $(d_mul) -type f | xargs file | grep ELF | cut -d: -f 1 | xargs dpkg-shlibdeps
 	dpkg-gencontrol -isp -P$(d_mul) -p$(p_mul)
-	cd $(d_mul) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | xargs md5sum > DEBIAN/md5sums
+	cd $(d_mul) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | LC_ALL=C sort | xargs md5sum > DEBIAN/md5sums
 
 	rm -f debian/substvars
 	mkdir -p $(d_mdev)/DEBIAN
 	dpkg-gencontrol -isp -P$(d_mdev) -p$(p_mdev)
-	cd $(d_mdev) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | xargs -r md5sum > DEBIAN/md5sums
+	cd $(d_mdev) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | LC_ALL=C sort | xargs -r md5sum > DEBIAN/md5sums
 endif
 
 ifeq ($(DEB_HOST_ARCH),hppa)
 	rm -f debian/substvars
 	find $(d_hppa64) -type f | xargs file | grep ELF | cut -d: -f 1 | xargs dpkg-shlibdeps
 	dpkg-gencontrol -isp -P$(d_hppa64) -p$(p_hppa64)
-	cd $(d_hppa64) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | xargs md5sum > DEBIAN/md5sums
+	cd $(d_hppa64) && find -type f  ! -regex './DEBIAN/.*' -printf '%P\n' | LC_ALL=C sort | xargs md5sum > DEBIAN/md5sums
 endif
 
 	chown -R root:root $(d_bin) $(d_dev)
 	chmod -R go=rX  $(d_bin) $(d_dev)
+	find $(d_bin) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_bin) ..
+	find $(d_dev) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_dev) ..
 ifeq ($(with_multiarch),yes)
 	chown -R root:root $(d_mul)
 	chmod -R go=rX  $(d_mul)
+	find $(d_mul) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_mul) ..
 
 	chown -R root:root $(d_mdev)
 	chmod -R go=rX  $(d_mdev)
+	find $(d_mdev) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_mdev) ..
 endif
 ifeq ($(DEB_HOST_ARCH),hppa)
 	chown -R root:root $(d_hppa64)
 	chmod -R go=rX  $(d_hppa64)
+	find $(d_hppa64) -depth -newermt '$(BUILD_DATE)' -print0 | \
+		xargs -0r touch --no-dereference --date='$(BUILD_DATE)'
 	dpkg --build $(d_hppa64) ..
 endif
 
@@ -1204,7 +1249,7 @@ install-cross-stamp: build-cross-stamp
 	: # Get rid of .la files since libtool obviously has no idea about transient paths
 	rm -f $(d_cross)/$(PF)/$(DEB_HOST_GNU_TYPE)/$(TARGET)/lib/*.la
 
-	gzip -9 $(d_cross)/$(PF)/share/man/man1/*
+	gzip -9n $(d_cross)/$(PF)/share/man/man1/*
 	touch $@
 
 configure-host-cross-stamp: configure-cross-stamp

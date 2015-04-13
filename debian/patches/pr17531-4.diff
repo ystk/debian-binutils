@@ -1,0 +1,307 @@
+# DP: PR binutils/17531: More fixes for invalid memory accesses
+# DP: triggered by fuzzed binaries (53774b7e76dc5b3e8cc00d6f7a9d27e6c65830a9).
+
+binutils/
+
+2014-12-08  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/17531
+	* dwarf.c (display_debug_frames): Check for a negative
+	augmentation data length.
+	(display_gdb_index): Check for invalid offsets.
+	* elfcomm.c (process_archive_index_and_symbols): Check for an
+	index number that overflows when multiplied by the ar index size.
+	* readelf.c (dump_ia64_unwind): Add range checks.
+	(slurp_ia64_unwind_table): Change to a boolean function.  Add
+	range checks.
+	(process_version_sections): Add range checks.
+	(get_symbol_version_string): Add check for missing section
+	headers.
+
+Index: b/binutils/dwarf.c
+===================================================================
+--- a/binutils/dwarf.c
++++ b/binutils/dwarf.c
+@@ -6329,9 +6329,42 @@
+       return 0;
+     }
+ 
++  /* PR 17531: file: 418d0a8a.  */
++  if (tu_list_offset < cu_list_offset)
++    {
++      warn (_("TU offset (%x) is less than CU offset (%x)\n"),
++	    tu_list_offset, cu_list_offset);
++      return 0;
++    }
++
+   cu_list_elements = (tu_list_offset - cu_list_offset) / 8;
++
++  if (address_table_offset < tu_list_offset)
++    {
++      warn (_("Address table offset (%x) is less than TU offset (%x)\n"),
++	    address_table_offset, tu_list_offset);
++      return 0;
++    }
++
+   tu_list_elements = (address_table_offset - tu_list_offset) / 8;
++
++  /* PR 17531: file: 18a47d3d.  */
++  if (symbol_table_offset < address_table_offset)
++    {
++      warn (_("Symbolt table offset (%xl) is less then Address table offset (%x)\n"),
++	    symbol_table_offset, address_table_offset);
++      return 0;
++    }
++
+   address_table_size = symbol_table_offset - address_table_offset;
++
++  if (constant_pool_offset < symbol_table_offset)
++    {
++      warn (_("Constant pool offset (%x) is less than symbol table offset (%x)\n"),
++	    constant_pool_offset, symbol_table_offset);
++      return 0;
++    }
++
+   symbol_table_slots = (constant_pool_offset - symbol_table_offset) / 8;
+ 
+   cu_list = start + cu_list_offset;
+@@ -6366,7 +6399,7 @@
+     }
+ 
+   printf (_("\nAddress table:\n"));
+-  for (i = 0; i < address_table_size; i += 2 * 8 + 4)
++  for (i = 0; i <= address_table_size - (2 * 8 + 4); i += 2 * 8 + 4)
+     {
+       uint64_t low = byte_get_little_endian (address_table + i, 8);
+       uint64_t high = byte_get_little_endian (address_table + i + 8, 8);
+@@ -6389,8 +6422,37 @@
+ 	{
+ 	  unsigned int j;
+ 
+-	  printf ("[%3u] %s:", i, constant_pool + name_offset);
+-	  num_cus = byte_get_little_endian (constant_pool + cu_vector_offset, 4);
++	  /* PR 17531: file: 5b7b07ad.  */
++	  if (constant_pool + name_offset < constant_pool
++	      || constant_pool + name_offset >= section->start + section->size)
++	    {
++	      printf (_("[%3u] <corrupt offset: %x>"), i, name_offset);
++	      warn (_("Corrupt name offset of 0x%x found for symbol table slot %d\n"),
++		    name_offset, i);
++	    }
++	  else
++	    printf ("[%3u] %s:", i, constant_pool + name_offset);
++
++	  if (constant_pool + cu_vector_offset < constant_pool
++	      || constant_pool + cu_vector_offset >= section->start + section->size)
++	    {
++	      printf (_("<invalid CU vector offset: %x>\n"), cu_vector_offset);
++	      warn (_("Corrupt CU vector offset of 0x%x found for symbol table slot %d\n"),
++		    cu_vector_offset, i);
++	      continue;
++	    }
++	  else
++	    num_cus = byte_get_little_endian (constant_pool + cu_vector_offset, 4);
++
++	  if (constant_pool + cu_vector_offset + 4 + num_cus * 4 >=
++	      section->start + section->size)
++	    {
++	      printf ("<invalid number of CUs: %d>\n", num_cus);
++	      warn (_("Invalid number of CUs (%d) for symbol table slot %d\n"),
++		    num_cus, i);
++	      continue;
++	    }
++
+ 	  if (num_cus > 1)
+ 	    printf ("\n");
+ 	  for (j = 0; j < num_cus; ++j)
+Index: b/binutils/elfcomm.c
+===================================================================
+--- a/binutils/elfcomm.c
++++ b/binutils/elfcomm.c
+@@ -510,9 +510,11 @@
+       arch->index_num = byte_get_big_endian (integer_buffer, sizeof_ar_index);
+       size -= sizeof_ar_index;
+ 
+-      if (size < arch->index_num * sizeof_ar_index)
++      if (size < arch->index_num * sizeof_ar_index
++	  /* PR 17531: file: 585515d1.  */
++	  || size < arch->index_num)
+ 	{
+-	  error (_("%s: the archive index is supposed to have %ld entries of %d bytes, but the size is only %ld\n"),
++	  error (_("%s: the archive index is supposed to have 0x%lx entries of %d bytes, but the size is only 0x%lx\n"),
+ 		 arch->file_name, (long) arch->index_num, sizeof_ar_index, size);
+ 	  return FALSE;
+ 	}
+Index: b/binutils/readelf.c
+===================================================================
+--- a/binutils/readelf.c
++++ b/binutils/readelf.c
+@@ -6354,6 +6354,7 @@
+       bfd_vma offset;
+       const unsigned char * dp;
+       const unsigned char * head;
++      const unsigned char * end;
+       const char * procname;
+ 
+       find_symbol_for_address (aux->symtab, aux->nsyms, aux->strtab,
+@@ -6376,6 +6377,18 @@
+       printf ("], info at +0x%lx\n",
+ 	      (unsigned long) (tp->info.offset - aux->seg_base));
+ 
++      /* PR 17531: file: 86232b32.  */
++      if (aux->info == NULL)
++	continue;
++
++      /* PR 17531: file: 0997b4d1.  */
++      if ((ABSADDR (tp->info) - aux->info_addr) >= aux->info_size)
++	{
++	  warn (_("Invalid offset %lx in table entry %ld\n"),
++		(long) tp->info.offset, (long) (tp - aux->table));
++	  continue;
++	}
++
+       head = aux->info + (ABSADDR (tp->info) - aux->info_addr);
+       stamp = byte_get ((unsigned char *) head, sizeof (stamp));
+ 
+@@ -6393,12 +6406,16 @@
+ 	}
+ 
+       in_body = 0;
+-      for (dp = head + 8; dp < head + 8 + eh_addr_size * UNW_LENGTH (stamp);)
++      end = head + 8 + eh_addr_size * UNW_LENGTH (stamp);
++      /* PR 17531: file: 16ceda89.  */
++      if (end > aux->info + aux->info_size)
++	end = aux->info + aux->info_size;
++      for (dp = head + 8; dp < end;)
+ 	dp = unw_decode (dp, in_body, & in_body);
+     }
+ }
+ 
+-static int
++static bfd_boolean
+ slurp_ia64_unwind_table (FILE * file,
+ 			 struct ia64_unw_aux_info * aux,
+ 			 Elf_Internal_Shdr * sec)
+@@ -6414,13 +6431,15 @@
+   Elf_Internal_Sym * sym;
+   const char * relname;
+ 
++  aux->table_len = 0;
++
+   /* First, find the starting address of the segment that includes
+      this section: */
+ 
+   if (elf_header.e_phnum)
+     {
+       if (! get_program_headers (file))
+-	  return 0;
++	  return FALSE;
+ 
+       for (seg = program_headers;
+ 	   seg < program_headers + elf_header.e_phnum;
+@@ -6443,12 +6462,14 @@
+   table = (unsigned char *) get_data (NULL, file, sec->sh_offset, 1, size,
+                                       _("unwind table"));
+   if (!table)
+-    return 0;
++    return FALSE;
+ 
++  aux->table_len = size / (3 * eh_addr_size);
+   aux->table = (struct ia64_unw_table_entry *)
+-      xcmalloc (size / (3 * eh_addr_size), sizeof (aux->table[0]));
++    xcmalloc (aux->table_len, sizeof (aux->table[0]));
+   tep = aux->table;
+-  for (tp = table; tp < table + size; ++tep)
++
++  for (tp = table; tp <= table + size - (3 * eh_addr_size); ++tep)
+     {
+       tep->start.section = SHN_UNDEF;
+       tep->end.section   = SHN_UNDEF;
+@@ -6474,7 +6495,12 @@
+ 
+       if (!slurp_rela_relocs (file, relsec->sh_offset, relsec->sh_size,
+ 			      & rela, & nrelas))
+-	return 0;
++	{
++	  free (aux->table);
++	  aux->table = NULL;
++	  aux->table_len = 0;
++	  return FALSE;
++	}
+ 
+       for (rp = rela; rp < rela + nrelas; ++rp)
+ 	{
+@@ -6489,7 +6515,14 @@
+ 
+ 	  i = rp->r_offset / (3 * eh_addr_size);
+ 
+-	  switch (rp->r_offset/eh_addr_size % 3)
++	  /* PR 17531: file: 5bc8d9bf.  */
++	  if (i >= aux->table_len)
++	    {
++	      warn (_("Skipping reloc with overlarge offset: %lx\n"), i);
++	      continue;
++	    }
++
++	  switch (rp->r_offset / eh_addr_size % 3)
+ 	    {
+ 	    case 0:
+ 	      aux->table[i].start.section = sym->st_shndx;
+@@ -6511,8 +6544,7 @@
+       free (rela);
+     }
+ 
+-  aux->table_len = size / (3 * eh_addr_size);
+-  return 1;
++  return TRUE;
+ }
+ 
+ static void
+@@ -6649,9 +6681,8 @@
+ 		  (unsigned long) unwsec->sh_offset,
+ 		  (unsigned long) (unwsec->sh_size / (3 * eh_addr_size)));
+ 
+-	  (void) slurp_ia64_unwind_table (file, & aux, unwsec);
+-
+-	  if (aux.table_len > 0)
++	  if (slurp_ia64_unwind_table (file, & aux, unwsec)
++	      && aux.table_len > 0)
+ 	    dump_ia64_unwind (& aux);
+ 
+ 	  if (aux.table)
+@@ -9252,7 +9283,6 @@
+ 		/* Check for overflow.  */
+ 		if (ent.vn_aux > (size_t) (endbuf - vstart))
+ 		  break;
+-
+ 		vstart += ent.vn_aux;
+ 
+ 		for (j = 0, isum = idx + ent.vn_aux; j < ent.vn_cnt; ++j)
+@@ -9281,9 +9311,14 @@
+ 			    get_ver_flags (aux.vna_flags), aux.vna_other);
+ 
+ 		    /* Check for overflow.  */
+-		    if (aux.vna_next > (size_t) (endbuf - vstart))
+-		      break;
+-
++		    if (aux.vna_next > (size_t) (endbuf - vstart)
++			|| (aux.vna_next == 0 && j < ent.vn_cnt - 1))
++		      {
++			warn (_("Invalid vna_next field of %lx\n"),
++			      aux.vna_next);
++			j = ent.vn_cnt;
++			break;
++		      }
+ 		    isum   += aux.vna_next;
+ 		    vstart += aux.vna_next;
+ 		  }
+@@ -10266,7 +10301,8 @@
+ 
+ 		  vers_data = byte_get (data, 2);
+ 
+-		  is_nobits = (psym->st_shndx < elf_header.e_shnum
++		  is_nobits = (section_headers != NULL
++			       && psym->st_shndx < elf_header.e_shnum
+ 			       && section_headers[psym->st_shndx].sh_type
+ 				  == SHT_NOBITS);
+ 

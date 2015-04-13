@@ -4,7 +4,7 @@ Index: b/ld/ld.texinfo
 ===================================================================
 --- a/ld/ld.texinfo
 +++ b/ld/ld.texinfo
-@@ -1669,7 +1669,7 @@
+@@ -1701,7 +1701,7 @@ ELF executable, the contents of the envi
  @code{LD_RUN_PATH} will be used if it is defined.
  
  The @option{-rpath} option may also be used on SunOS.  By default, on

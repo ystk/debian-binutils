@@ -1,0 +1,54 @@
+# DP: PR ld/17742: Don't create .eh_frame_hdr on shared lib bfd
+
+From ca0694adf6d128c2feba16f6374954c191fb5edb Mon Sep 17 00:00:00 2001
+From: Alan Modra <amodra@gmail.com>
+Date: Wed, 24 Dec 2014 22:07:42 +1030
+Subject: [PATCH] Don't create .eh_frame_hdr on shared lib bfd
+
+If no object files have .eh_frame, but some shared library does, then
+ld creates a .eh_frame_hdr section using the shared library bfd.  This
+is silly since shared library .eh_frame sections don't contribute to
+the output .eh_frame and thus no .eh_frame_hdr is needed.
+
+Also, the bfd section list and count is cleared for shared libraries,
+and a zero section count used as a flag in lang_check to omit a call
+to bfd_merge_private_bfd_data for shared libraries.  If we create a
+section on a shared lib bfd then ld will wrongly attempt to merge the
+shared library private bfd data.
+
+	PR 17742
+	* ld/emultempl/elf32.em (gld${EMULATION_NAME}_after_open): Exclude
+	shared libraries in loop looking for .eh_frame sections.
+	Similarly for build-id loop.
+
+ld/
+
+2014-12-24  Alan Modra  <amodra@gmail.com>
+
+	* emultempl/elf32.em (gld${EMULATION_NAME}_after_open): Exclude
+	shared libraries in loop looking for .eh_frame sections.
+	Similarly for build-id loop.
+
+diff --git a/ld/emultempl/elf32.em b/ld/emultempl/elf32.em
+index 137446f..36dee8e 100644
+--- a/ld/emultempl/elf32.em
++++ b/ld/emultempl/elf32.em
+@@ -1015,7 +1015,8 @@ gld${EMULATION_NAME}_after_open (void)
+       /* Find an ELF input.  */
+       for (abfd = link_info.input_bfds;
+ 	   abfd != (bfd *) NULL; abfd = abfd->link.next)
+-	if (bfd_get_flavour (abfd) == bfd_target_elf_flavour)
++	if (bfd_get_flavour (abfd) == bfd_target_elf_flavour
++	    && bfd_count_sections (abfd) != 0)
+ 	  break;
+ 
+       /* PR 10555: If there are no ELF input files do not try to
+@@ -1053,6 +1054,8 @@ gld${EMULATION_NAME}_after_open (void)
+ 
+       for (abfd = link_info.input_bfds; abfd; abfd = abfd->link.next)
+ 	{
++	  if (bfd_count_sections (abfd) == 0)
++	    continue;
+ 	  if (bfd_get_flavour (abfd) == bfd_target_elf_flavour)
+ 	    elfbfd = abfd;
+ 	  if (!warn_eh_frame)

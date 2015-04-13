@@ -1,0 +1,198 @@
+# DP: PR binutils/17531: More fixes for invalid memory accesses
+# DP: triggered by fuzzed binaries (591f7597d447d8d038d6d8e24a706d1d5e32eba1).
+
+binutils/
+
+2014-12-01  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/17531
+	* dwarf.c (process_cu_tu_index): Check for an out of range row
+	index.
+	* elfcomm.c (adjust_relative_path): Change name_len parameter to
+	an unsigned long.  Check for path length overflow.
+	(process_archive_index_and_symbols): Check for invalid header
+	size.
+	(setup_archive): Add checks for invalid archives.
+	(get_archive_member_name): Add range checks.
+	* elfcomm.h (adjust_relative_path): Update prototyoe.
+	* readelf.c (process_archive): Add range checks.
+ 
+Index: b/binutils/dwarf.c
+===================================================================
+--- a/binutils/dwarf.c
++++ b/binutils/dwarf.c
+@@ -6649,6 +6649,14 @@
+ 	  row = byte_get (pi, 4);
+ 	  if (row != 0)
+ 	    {
++	      /* PR 17531: file: a05f6ab3.  */
++	      if (row >= nused)
++		{
++		  warn (_("Row index (%u) is larger than number of used entries (%u)\n"),
++			row, nused);
++		  return 0;
++		}
++
+ 	      if (!do_display)
+ 		memcpy (&this_set[row - 1].signature, ph, sizeof (uint64_t));
+ 	      prow = poffsets + (row - 1) * ncols * 4;
+Index: b/binutils/elfcomm.c
+===================================================================
+--- a/binutils/elfcomm.c
++++ b/binutils/elfcomm.c
+@@ -386,10 +386,11 @@
+ 
+ char *
+ adjust_relative_path (const char *file_name, const char *name,
+-		      int name_len)
++		      unsigned long name_len)
+ {
+   char * member_file_name;
+   const char * base_name = lbasename (file_name);
++  size_t amt;
+ 
+   /* This is a proxy entry for a thin archive member.
+      If the extended name table contains an absolute path
+@@ -399,7 +400,10 @@
+      archive is located.  */
+   if (IS_ABSOLUTE_PATH (name) || base_name == file_name)
+     {
+-      member_file_name = (char *) malloc (name_len + 1);
++      amt = name_len + 1;
++      if (amt == 0)
++	return NULL;
++      member_file_name = (char *) malloc (amt);
+       if (member_file_name == NULL)
+         {
+           error (_("Out of memory\n"));
+@@ -413,7 +417,18 @@
+       /* Concatenate the path components of the archive file name
+          to the relative path name from the extended name table.  */
+       size_t prefix_len = base_name - file_name;
+-      member_file_name = (char *) malloc (prefix_len + name_len + 1);
++
++      amt = prefix_len + name_len + 1;
++      /* PR 17531: file: 2896dc8b
++	 Catch wraparound.  */
++      if (amt < prefix_len || amt < name_len)
++	{
++	  error (_("Abnormal length of thin archive member name: %lx\n"),
++		 name_len);
++	  return NULL;
++	}
++      
++      member_file_name = (char *) malloc (amt);
+       if (member_file_name == NULL)
+         {
+           error (_("Out of memory\n"));
+@@ -445,6 +460,14 @@
+   unsigned long size;
+ 
+   size = strtoul (arch->arhdr.ar_size, NULL, 10);
++  /* PR 17531: file: 912bd7de.  */
++  if ((signed long) size < 0)
++    {
++      error (_("%s: invalid archive header size: %ld\n"),
++	     arch->file_name, size);
++      return FALSE;
++    }
++
+   size = size + (size & 1);
+ 
+   arch->next_arhdr_offset += sizeof arch->arhdr + size;
+@@ -623,9 +646,17 @@
+     {
+       /* This is the archive string table holding long member names.  */
+       arch->longnames_size = strtoul (arch->arhdr.ar_size, NULL, 10);
++      /* PR 17531: file: 01068045.  */
++      if (arch->longnames_size < 8)
++	{
++	  error (_("%s: long name table is too small, (size = %ld)\n"),
++		 file_name, arch->longnames_size);
++	  return 1;
++	}
+       arch->next_arhdr_offset += sizeof arch->arhdr + arch->longnames_size;
+ 
+-      arch->longnames = (char *) malloc (arch->longnames_size);
++      /* Plus one to allow for a string terminator.  */
++      arch->longnames = (char *) malloc (arch->longnames_size + 1);
+       if (arch->longnames == NULL)
+ 	{
+ 	  error (_("Out of memory reading long symbol names in archive\n"));
+@@ -719,17 +750,31 @@
+       if (arch->is_thin_archive && endp != NULL && * endp == ':')
+         arch->nested_member_origin = strtoul (endp + 1, NULL, 10);
+ 
++      if (j > arch->longnames_size)
++	{
++	  error (_("Found long name index (%ld) beyond end of long name table\n"),j);
++	  return NULL;
++	}
+       while ((j < arch->longnames_size)
+              && (arch->longnames[j] != '\n')
+              && (arch->longnames[j] != '\0'))
+         j++;
+-      if (arch->longnames[j-1] == '/')
++      if (j > 0 && arch->longnames[j-1] == '/')
+         j--;
++      if (j > arch->longnames_size)
++	j = arch->longnames_size;
+       arch->longnames[j] = '\0';
+ 
+       if (!arch->is_thin_archive || arch->nested_member_origin == 0)
+         return arch->longnames + k;
+ 
++      /* PR 17531: file: 2896dc8b.  */
++      if (k >= j)
++	{
++	  error (_("Invalid Thin archive member name\n"));
++	  return NULL;
++	}
++ 
+       /* This is a proxy for a member of a nested archive.
+          Find the name of the member in that archive.  */
+       member_file_name = adjust_relative_path (arch->file_name,
+Index: b/binutils/elfcomm.h
+===================================================================
+--- a/binutils/elfcomm.h
++++ b/binutils/elfcomm.h
+@@ -77,7 +77,7 @@
+ };
+ 
+ /* Return the path name for a proxy entry in a thin archive.  */
+-extern char *adjust_relative_path (const char *, const char *, int);
++extern char *adjust_relative_path (const char *, const char *, unsigned long);
+ 
+ /* Read the symbol table and long-name table from an archive.  */
+ extern int setup_archive (struct archive_info *, const char *, FILE *,
+Index: b/binutils/readelf.c
+===================================================================
+--- a/binutils/readelf.c
++++ b/binutils/readelf.c
+@@ -15160,11 +15160,11 @@
+ 	error (_("%s: unable to dump the index as none was found\n"), file_name);
+       else
+ 	{
+-	  unsigned int i, l;
++	  unsigned long i, l;
+ 	  unsigned long current_pos;
+ 
+-	  printf (_("Index of archive %s: (%ld entries, 0x%lx bytes in the symbol table)\n"),
+-		  file_name, (long) arch.index_num, arch.sym_size);
++	  printf (_("Index of archive %s: (%lu entries, 0x%lx bytes in the symbol table)\n"),
++		  file_name, (unsigned long) arch.index_num, arch.sym_size);
+ 	  current_pos = ftell (file);
+ 
+ 	  for (i = l = 0; i < arch.index_num; i++)
+@@ -15195,8 +15195,9 @@
+ 			 file_name);
+ 		  break;
+ 		}
+-	      printf ("\t%s\n", arch.sym_table + l);
+-	      l += strlen (arch.sym_table + l) + 1;
++	      /* PR 17531: file: 0b6630b2.  */
++	      printf ("\t%.*s\n", (int) (arch.sym_size - l), arch.sym_table + l);
++	      l += strnlen (arch.sym_table + l, arch.sym_size - l) + 1;
+ 	    }
+ 
+ 	  if (arch.uses_64bit_indicies)

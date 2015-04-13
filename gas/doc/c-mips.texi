@@ -84,21 +84,24 @@ VxWorks-style position-independent macro expansions.
 @itemx -mips32r2
 @itemx -mips32r3
 @itemx -mips32r5
+@itemx -mips32r6
 @itemx -mips64
 @itemx -mips64r2
 @itemx -mips64r3
 @itemx -mips64r5
+@itemx -mips64r6
 Generate code for a particular MIPS Instruction Set Architecture level.
 @samp{-mips1} corresponds to the R2000 and R3000 processors,
 @samp{-mips2} to the R6000 processor, @samp{-mips3} to the
 R4000 processor, and @samp{-mips4} to the R8000 and R10000 processors.
-@samp{-mips5}, @samp{-mips32}, @samp{-mips32r2}, @samp{-mips32r3}, 
-@samp{-mips32r5}, @samp{-mips64}, @samp{-mips64r2}, @samp{-mips64r3}, and
-@samp{-mips64r5} correspond to generic MIPS V, MIPS32, MIPS32 Release 2,
-MIPS32 Release 3, MIPS32 Release 5, MIPS64, and MIPS64 Release 2,
-MIPS64 Release 3, and MIPS64 Release 5 ISA processors, respectively.  You 
-can also switch instruction sets during the assembly; see @ref{MIPS ISA,
-Directives to override the ISA level}.
+@samp{-mips5}, @samp{-mips32}, @samp{-mips32r2}, @samp{-mips32r3},
+@samp{-mips32r5}, @samp{-mips32r6}, @samp{-mips64}, @samp{-mips64r2},
+@samp{-mips64r3}, @samp{-mips64r5}, and @samp{-mips64r6} correspond to
+generic MIPS V, MIPS32, MIPS32 Release 2, MIPS32 Release 3, MIPS32
+Release 5, MIPS32 Release 6, MIPS64, and MIPS64 Release 2, MIPS64
+Release 3, MIPS64 Release 5, and MIPS64 Release 6 ISA processors,
+respectively.  You can also switch instruction sets during the assembly;
+see @ref{MIPS ISA, Directives to override the ISA level}.
 
 @item -mgp32
 @itemx -mfp32
@@ -676,7 +679,7 @@ Small data is not supported for SVR4-style PIC.
 @sc{gnu} @code{@value{AS}} supports an additional directive to change
 the MIPS Instruction Set Architecture level on the fly: @code{.set
 mips@var{n}}.  @var{n} should be a number from 0 to 5, or 32, 32r2, 32r3,
-32r5, 64, 64r2, 64r3 or 64r5.
+32r5, 32r6, 64, 64r2, 64r3, 64r5 or 64r6.
 The values other than 0 make the assembler accept instructions
 for the corresponding ISA level, from that point on in the
 assembly.  @code{.set mips@var{n}} affects not only which instructions
@@ -766,9 +769,9 @@ The @code{.global} and @code{.globl} directives supported by
 region of data not code.  This means that, for example, any
 instructions following such a symbol will not be disassembled by
 @code{objdump} as it will regard them as data.  To change this
-behaviour an optional section name can be placed after the symbol name
+behavior an optional section name can be placed after the symbol name
 in the @code{.global} directive.  If this section exists and is known
-to be a code section, then the symbol will be marked as poiting at
+to be a code section, then the symbol will be marked as pointing at
 code not data.  Ie the syntax for the directive is:
 
   @code{.global @var{symbol}[ @var{section}][, @var{symbol}[ @var{section}]] ...},
@@ -837,8 +840,8 @@ pass all floating-point data in general-purpose registers.
 
 @item 4 - Deprecated
 This variant existed as an initial attempt at supporting 64-bit wide
-floating-point registers for O32 ABI on a MIPS32r2 cpu.  This has been
-superceded by @value{5}, @value{6} and @value{7}.
+floating-point registers for O32 ABI on a MIPS32r2 CPU.  This has been
+superseded by 5, 6 and 7.
 
 @item 5 - Double-precision 32-bit CPU, 32-bit or 64-bit FPU
 This variant is used by 32-bit ABIs to indicate that the floating-point
@@ -995,7 +998,7 @@ Release 1 instructions from being accepted.
 @kindex @code{.set nodspr2}
 The directive @code{.set dspr2} makes the assembler accept instructions
 from the DSP Release 2 Application Specific Extension from that point
-on in the assembly.  This dirctive implies @code{.set dsp}.  The
+on in the assembly.  This directive implies @code{.set dsp}.  The
 @code{.set nodspr2} directive prevents DSP Release 2 instructions from
 being accepted.
 

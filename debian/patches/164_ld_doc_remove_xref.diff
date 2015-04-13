@@ -4,7 +4,7 @@ Index: b/ld/ld.texinfo
 ===================================================================
 --- a/ld/ld.texinfo
 +++ b/ld/ld.texinfo
-@@ -7722,7 +7722,8 @@ may be spent optimizing algorithms for a
+@@ -7769,7 +7769,8 @@ may be spent optimizing algorithms for a
  One minor artifact of the BFD solution which you should bear in
  mind is the potential for information loss.  There are two places where
  useful information can be lost using the BFD mechanism: during

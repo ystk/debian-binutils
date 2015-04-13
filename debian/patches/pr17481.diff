@@ -1,0 +1,1583 @@
+# DP: Fix PR bfd/17481
+
+bfd/
+
+2014-10-15  Alan Modra  <amodra@gmail.com>
+
+	PR 17481
+	* aoutx.h (NAME (aout, find_nearest_line)): Add "discriminator_ptr"
+	param, group "section" and "offset" params.  Zero discriminator.
+	* bfd.c (bfd_find_nearest_line): Implement with new
+	_bfd_find_nearest_line.
+	(bfd_find_nearest_line_discriminator): Likewise.
+	* coff-i386.c (_bfd_generic_find_nearest_line_discriminator): Don't
+	define.
+	* coff-rs6000.c (xcoff_find_nearest_line,
+	xcoff_find_nearest_line_discriminator): Delete.
+	(_bfd_xcoff_find_nearest_line): Don't define.
+	(_bfd_xcoff_find_nearest_line): Define as coff_find_nearest_line.
+	* coff-x86_64.c (_bfd_generic_find_nearest_line_discriminator): Don't
+	define.
+	* coff64-rs6000.c (rs6000_xcoff64_vec, rs6000_xcoff64_aix_vec): Adjust.
+	* coffgen.c (coff_find_nearest_line_with_names): Reorder params,
+	adjust _bfd_dwarf2_find_nearest_line call.
+	(coff_find_nearest_line): Add "discriminator_ptr" param, reorder
+	others.  Set discriminator.  Adjust call.
+	(coff_find_nearest_line_discriminator): Delete.
+	* dwarf1.c (_bfd_dwarf1_find_nearest_line): Reorder params.
+	* dwarf2.c (find_line): Rename to..
+	(_bfd_dwarf2_find_nearest_line): ..this, reordering params.
+	Simplify setting of do_line.  Delete old function.
+	(_bfd_dwarf2_find_line): Delete.
+	* ecoff.c (_bfd_ecoff_find_nearest_line): Reorder params, add
+	discriminator_ptr and set it.
+	* elf-bfd.h (_bfd_elf_find_nearest_line): Update prototype.
+	(_bfd_elf_find_nearest_line_discriminator): Delete.
+	(_bfd_elf_find_line_discriminator): Delete.
+	(_bfd_generic_find_nearest_line_discriminator): Don't define.
+	* elf.c (elf_find_function): Reorder params.
+	(_bfd_elf_find_nearest_line): Reorder params, add discriminator_ptr.
+	Adjust calls.
+	(_bfd_elf_find_nearest_line_discriminator): Delete.
+	(_bfd_elf_find_line): Adjust call.
+	* elf32-arm.c (arm_elf_find_function): Reorder params.
+	(elf32_arm_find_nearest_line): Reorder params, add discriminator_ptr.
+	Adjust calls.
+	* elf64-alpha.c (elf64_alpha_find_nearest_line): Similarly.
+	* elfnn-aarch64.c (aarch64_elf_find_function): Reorder params.
+	(elfNN_aarch64_find_nearest_line): Reorder params, add
+	discriminator_ptr.  Adjust calls.
+	* elfxx-mips.c (_bfd_mips_elf_find_nearest_line): Similarly.
+	* elfxx-mips.h (_bfd_mips_elf_find_nearest_line): Update prototype.
+	* libaout.h (NAME (aout, find_nearest_line)): Update prototype.
+	* libbfd-in.h (_bfd_nosymbols_find_nearest_line): Update.
+	(_bfd_dwarf1_find_nearest_line): Likewise.
+	(_bfd_dwarf2_find_nearest_line): Likewise.
+	(_bfd_dwarf2_find_line): Delete.
+	(_bfd_generic_find_nearest_line_discriminator): Delete.
+	* libbfd.c (_bfd_generic_find_nearest_line_discriminator): Delete.
+	* libcoff-in.h (coff_find_nearest_line): Update prototype.
+	(coff_find_nearest_line_discriminator): Delete.
+	(coff_find_nearest_line_with_names): Update prototype.
+	* libecoff.h (_bfd_ecoff_find_nearest_line): Update prototype.
+	* mach-o.c (bfd_mach_o_find_nearest_line): Reorder params, add
+	discriminator_ptr.  Adjust calls.
+	* mach-o.h (bfd_mach_o_find_nearest_line): Update prototype.
+	* pdp11.c (NAME (aout, find_nearest_line)): Reorder params, add
+	discriminator_ptr and set.
+	* som.c (som_find_nearest_line): Similarly.
+	* targets.c (BFD_JUMP_TABLE_SYMBOLS): Delete entry for
+	_bfd_find_nearest_line_discriminator.
+	(struct bfd_target <_bfd_find_nearest_line>): Adjust prototype.
+	(struct bfd_target <_bfd_find_nearest_line_discriminator>): Delete.
+	* vms-alpha.c (_bfd_vms_find_nearest_dst_line): Rename to..
+	(_bfd_vms_find_nearest_line): ..this.  Reorder params, add
+	"discriminator" and set.
+	(_bfd_vms_find_nearest_line_discriminator): Delete.
+	(_bfd_generic_find_nearest_line_discriminator): Don't define.
+	(alpha_vms_find_nearest_line): Update define.
+	* bfd-in2.h: Regenerate.
+	* libbfd.h: Regenerate.
+	* libcoff.h: Regenerate.
+
+2014-10-15  Alan Modra  <amodra@gmail.com>
+
+	* targets.c (BFD_JUMP_TABLE_SYMBOLS): Use NAME##_find_line.
+	* aout-adobe.c (aout_32_find_line): Define.
+	(aout_32_bfd_make_debug_symbol, aout_32_bfd_reloc_type_lookup,
+	aout_32_bfd_reloc_name_lookup): Define using _bfd_nosymbols define.
+	* aout-target.h (MY_find_line): Define.
+	* aout-tic30.c (MY_find_line): Define.
+	* binary.c (binary_find_line): Define.
+	* bout.c (aout_32_find_line): Define.
+	* coff-rs6000.c (_bfd_xcoff_find_line): Define.
+	* coff64-rs6000.c (rs6000_xcoff64_vec): Use coff_find_line.
+	(rs6000_xcoff64_aix_vec): Likewise.
+	* elf-bfd.h (_bfd_generic_find_line): Don't define.
+	* elfxx-target.h (bfd_elfNN_find_line): Define.
+	* i386msdos.c (msdos_find_line): Define.
+	* i386os9k.c (aout_32_find_line): Define.
+	* ieee.c (ieee_find_nearest_line, ieee_find_inliner_info): Delete func.
+	(ieee_find_nearest_line, ieee_find_line,
+	ieee_find_inliner_info): Define.
+	* ihex.c (ihex_find_line): Define.
+	* libbfd-in.h (_bfd_nosymbols_find_line): Define.
+	(_bfd_generic_find_line): Don't define.
+	* libbfd.c (_bfd_generic_find_line): Delete.
+	* libcoff-in.h (coff_find_line): Define.
+	* libecoff.h (_bfd_ecoff_find_line): Define.
+	* mach-o.h (bfd_mach_o_find_line): Define.
+	* mmo.c (mmo_find_line): Define.
+	* nlm-target.h (nlm_find_line): Define.
+	* oasys.c (oasys_find_nearest_line, oasys_find_inliner_info): Delete.
+	(oasys_find_nearest_line, oasys_find_line,
+	oasys_find_inliner_info): Define.
+	* pef.c (bfd_pef_find_line): Define.
+	* plugin.c (bfd_plugin_find_line): Define.
+	* ppcboot.c (ppcboot_find_line): Define.
+	* som.c (som_find_line): Define.
+	* srec.c (srec_find_line): Define.
+	* tekhex.c (tekhex_find_line): Define.
+	* versados.c (versados_find_line): Define.
+	* vms-alpha.c (alpha_vms_find_line): Define.
+	* xsym.c (bfd_sym_find_line): Define.
+	* bfd-in2.h: Regenerate.
+	* libbfd.h: Regenerate.
+	* libcoff.h: Regenerate.
+
+--- a/bfd/aout-adobe.c
++++ b/bfd/aout-adobe.c
+@@ -446,9 +446,10 @@ aout_adobe_sizeof_headers (bfd *ignore_abfd ATTRIBUTE_UNUSED,
+ 
+ /* Build the transfer vector for Adobe A.Out files.  */
+ 
+-#define aout_32_bfd_make_debug_symbol ((asymbol *(*) (bfd *, void *, unsigned long)) bfd_nullvoidptr)
+-#define aout_32_bfd_reloc_type_lookup ((reloc_howto_type *(*) (bfd *, bfd_reloc_code_real_type)) bfd_nullvoidptr)
+-#define aout_32_bfd_reloc_name_lookup ((reloc_howto_type *(*) (bfd *, const char *)) bfd_nullvoidptr)
++#define aout_32_find_line			    _bfd_nosymbols_find_line
++#define aout_32_bfd_make_debug_symbol		    _bfd_nosymbols_bfd_make_debug_symbol
++#define aout_32_bfd_reloc_type_lookup		    _bfd_norelocs_bfd_reloc_type_lookup
++#define aout_32_bfd_reloc_name_lookup		    _bfd_norelocs_bfd_reloc_name_lookup
+ #define aout_32_close_and_cleanup                   aout_32_bfd_free_cached_info
+ #define	aout_32_set_arch_mach		            aout_adobe_set_arch_mach
+ #define	aout_32_set_section_contents	            aout_adobe_set_section_contents
+--- a/bfd/aout-target.h
++++ b/bfd/aout-target.h
+@@ -468,6 +468,9 @@ MY_bfd_final_link (bfd *abfd, struct bfd_link_info *info)
+ #ifndef MY_find_nearest_line
+ #define MY_find_nearest_line NAME (aout, find_nearest_line)
+ #endif
++#ifndef MY_find_line
++#define MY_find_line _bfd_nosymbols_find_line
++#endif
+ #ifndef MY_find_inliner_info
+ #define MY_find_inliner_info _bfd_nosymbols_find_inliner_info
+ #endif
+--- a/bfd/aout-tic30.c
++++ b/bfd/aout-tic30.c
+@@ -926,6 +926,9 @@ tic30_aout_set_arch_mach (bfd *abfd,
+ #ifndef MY_find_nearest_line
+ #define MY_find_nearest_line NAME (aout, find_nearest_line)
+ #endif
++#ifndef MY_find_line
++#define MY_find_line _bfd_nosymbols_find_line
++#endif
+ #ifndef MY_find_inliner_info
+ #define MY_find_inliner_info _bfd_nosymbols_find_inliner_info
+ #endif
+--- a/bfd/aoutx.h
++++ b/bfd/aoutx.h
+@@ -2640,12 +2640,13 @@ NAME (aout, minisymbol_to_symbol) (bfd *abfd,
+ 
+ bfd_boolean
+ NAME (aout, find_nearest_line) (bfd *abfd,
+-				asection *section,
+ 				asymbol **symbols,
++				asection *section,
+ 				bfd_vma offset,
+ 				const char **filename_ptr,
+ 				const char **functionname_ptr,
+-				unsigned int *line_ptr)
++				unsigned int *line_ptr,
++				unsigned int *disriminator_ptr)
+ {
+   /* Run down the file looking for the filename, function and linenumber.  */
+   asymbol **p;
+@@ -2663,6 +2664,8 @@ NAME (aout, find_nearest_line) (bfd *abfd,
+   *filename_ptr = abfd->filename;
+   *functionname_ptr = 0;
+   *line_ptr = 0;
++  if (disriminator_ptr)
++    *disriminator_ptr = 0;
+ 
+   if (symbols != NULL)
+     {
+--- a/bfd/bfd-in2.h
++++ b/bfd/bfd-in2.h
+@@ -6651,12 +6651,12 @@ bfd_boolean bfd_set_private_flags (bfd *abfd, flagword flags);
+ 
+ #define bfd_find_nearest_line(abfd, sec, syms, off, file, func, line) \
+        BFD_SEND (abfd, _bfd_find_nearest_line, \
+-                 (abfd, sec, syms, off, file, func, line))
++                 (abfd, syms, sec, off, file, func, line, NULL))
+ 
+ #define bfd_find_nearest_line_discriminator(abfd, sec, syms, off, file, func, \
+                                             line, disc) \
+-       BFD_SEND (abfd, _bfd_find_nearest_line_discriminator, \
+-                 (abfd, sec, syms, off, file, func, line, disc))
++       BFD_SEND (abfd, _bfd_find_nearest_line, \
++                 (abfd, syms, sec, off, file, func, line, disc))
+ 
+ #define bfd_find_line(abfd, syms, sym, file, line) \
+        BFD_SEND (abfd, _bfd_find_line, \
+@@ -7018,8 +7018,7 @@ typedef struct bfd_target
+   NAME##_bfd_is_target_special_symbol, \
+   NAME##_get_lineno, \
+   NAME##_find_nearest_line, \
+-  _bfd_generic_find_nearest_line_discriminator, \
+-  _bfd_generic_find_line, \
++  NAME##_find_line, \
+   NAME##_find_inliner_info, \
+   NAME##_bfd_make_debug_symbol, \
+   NAME##_read_minisymbols, \
+@@ -7040,10 +7039,7 @@ typedef struct bfd_target
+   bfd_boolean (*_bfd_is_target_special_symbol) (bfd *, asymbol *);
+   alent *     (*_get_lineno) (bfd *, struct bfd_symbol *);
+   bfd_boolean (*_bfd_find_nearest_line)
+-    (bfd *, struct bfd_section *, struct bfd_symbol **, bfd_vma,
+-     const char **, const char **, unsigned int *);
+-  bfd_boolean (*_bfd_find_nearest_line_discriminator)
+-    (bfd *, struct bfd_section *, struct bfd_symbol **, bfd_vma,
++    (bfd *, struct bfd_symbol **, struct bfd_section *, bfd_vma,
+      const char **, const char **, unsigned int *, unsigned int *);
+   bfd_boolean (*_bfd_find_line)
+     (bfd *, struct bfd_symbol **, struct bfd_symbol *,
+--- a/bfd/bfd.c
++++ b/bfd/bfd.c
+@@ -1444,12 +1444,12 @@ DESCRIPTION
+ .
+ .#define bfd_find_nearest_line(abfd, sec, syms, off, file, func, line) \
+ .       BFD_SEND (abfd, _bfd_find_nearest_line, \
+-.                 (abfd, sec, syms, off, file, func, line))
++.                 (abfd, syms, sec, off, file, func, line, NULL))
+ .
+ .#define bfd_find_nearest_line_discriminator(abfd, sec, syms, off, file, func, \
+ .                                            line, disc) \
+-.       BFD_SEND (abfd, _bfd_find_nearest_line_discriminator, \
+-.                 (abfd, sec, syms, off, file, func, line, disc))
++.       BFD_SEND (abfd, _bfd_find_nearest_line, \
++.                 (abfd, syms, sec, off, file, func, line, disc))
+ .
+ .#define bfd_find_line(abfd, syms, sym, file, line) \
+ .       BFD_SEND (abfd, _bfd_find_line, \
+--- a/bfd/binary.c
++++ b/bfd/binary.c
+@@ -204,6 +204,7 @@ binary_get_symbol_info (bfd *ignore_abfd ATTRIBUTE_UNUSED,
+ #define binary_bfd_is_local_label_name      bfd_generic_is_local_label_name
+ #define binary_get_lineno                  _bfd_nosymbols_get_lineno
+ #define binary_find_nearest_line           _bfd_nosymbols_find_nearest_line
++#define binary_find_line                   _bfd_nosymbols_find_line
+ #define binary_find_inliner_info           _bfd_nosymbols_find_inliner_info
+ #define binary_bfd_make_debug_symbol       _bfd_nosymbols_bfd_make_debug_symbol
+ #define binary_read_minisymbols            _bfd_generic_read_minisymbols
+--- a/bfd/bout.c
++++ b/bfd/bout.c
+@@ -1374,6 +1374,7 @@ b_out_bfd_get_relocated_section_contents (bfd *output_bfd,
+ 
+ /* Build the transfer vectors for Big and Little-Endian B.OUT files.  */
+ 
++#define aout_32_find_line                      _bfd_nosymbols_find_line
+ #define aout_32_bfd_make_debug_symbol          _bfd_nosymbols_bfd_make_debug_symbol
+ #define aout_32_close_and_cleanup              aout_32_bfd_free_cached_info
+ #define b_out_bfd_link_hash_table_create       _bfd_generic_link_hash_table_create
+--- a/bfd/coff-i386.c
++++ b/bfd/coff-i386.c
+@@ -605,9 +605,6 @@ coff_i386_is_local_label_name (bfd *abfd, const char *name)
+ 
+ #include "coffcode.h"
+ 
+-#define _bfd_generic_find_nearest_line_discriminator \
+-	coff_find_nearest_line_discriminator
+-
+ const bfd_target
+ #ifdef TARGET_SYM
+   TARGET_SYM =
+--- a/bfd/coff-rs6000.c
++++ b/bfd/coff-rs6000.c
+@@ -430,39 +430,6 @@ static const struct dwarf_debug_section xcoff_debug_sections[] =
+   { NULL,	NULL }, /* .debug_weaknames */
+   { NULL,	NULL },
+ };
+-
+-static bfd_boolean
+-xcoff_find_nearest_line (bfd *abfd,
+-                         asection *section,
+-                         asymbol **symbols,
+-                         bfd_vma offset,
+-                         const char **filename_ptr,
+-                         const char **functionname_ptr,
+-                         unsigned int *line_ptr)
+-{
+-  return coff_find_nearest_line_with_names (abfd, xcoff_debug_sections,
+-                                            section, symbols, offset,
+-                                            filename_ptr, functionname_ptr,
+-                                            line_ptr);
+-}
+-
+-static bfd_boolean
+-xcoff_find_nearest_line_discriminator (bfd *abfd,
+-                                      asection *section,
+-                                      asymbol **symbols,
+-                                      bfd_vma offset,
+-                                      const char **filename_ptr,
+-                                      const char **functionname_ptr,
+-                                      unsigned int *line_ptr,
+-                                      unsigned int *discriminator)
+-{
+-  *discriminator = 0;
+-  return coff_find_nearest_line_with_names (abfd, xcoff_debug_sections,
+-                                            section, symbols, offset,
+-                                            filename_ptr, functionname_ptr,
+-                                            line_ptr);
+-}
+-
+ 
+ void
+ _bfd_xcoff_swap_sym_in (bfd *abfd, void * ext1, void * in1)
+@@ -4045,9 +4012,8 @@ const struct xcoff_dwsect_name xcoff_dwsect_names[] = {
+ #define _bfd_xcoff_bfd_is_target_special_symbol \
+   coff_bfd_is_target_special_symbol
+ #define _bfd_xcoff_get_lineno coff_get_lineno
+-#define _bfd_xcoff_find_nearest_line xcoff_find_nearest_line
+-#define _bfd_generic_find_nearest_line_discriminator \
+-  xcoff_find_nearest_line_discriminator
++#define _bfd_xcoff_find_nearest_line coff_find_nearest_line
++#define _bfd_xcoff_find_line coff_find_line
+ #define _bfd_xcoff_find_inliner_info coff_find_inliner_info
+ #define _bfd_xcoff_bfd_make_debug_symbol coff_bfd_make_debug_symbol
+ #define _bfd_xcoff_read_minisymbols _bfd_generic_read_minisymbols
+--- a/bfd/coff-x86_64.c
++++ b/bfd/coff-x86_64.c
+@@ -730,9 +730,6 @@ coff_amd64_is_local_label_name (bfd *abfd, const char *name)
+ #define amd64coff_object_p coff_object_p
+ #endif
+ 
+-#define _bfd_generic_find_nearest_line_discriminator \
+-	coff_find_nearest_line_discriminator
+-
+ const bfd_target
+ #ifdef TARGET_SYM
+   TARGET_SYM =
+--- a/bfd/coff64-rs6000.c
++++ b/bfd/coff64-rs6000.c
+@@ -2716,8 +2716,7 @@ const bfd_target rs6000_xcoff64_vec =
+     coff_bfd_is_target_special_symbol,
+     coff_get_lineno,
+     coff_find_nearest_line,
+-    _bfd_generic_find_nearest_line_discriminator,
+-    _bfd_generic_find_line,
++    coff_find_line,
+     coff_find_inliner_info,
+     coff_bfd_make_debug_symbol,
+     _bfd_generic_read_minisymbols,
+@@ -2974,8 +2973,7 @@ const bfd_target rs6000_xcoff64_aix_vec =
+     coff_bfd_is_target_special_symbol,
+     coff_get_lineno,
+     coff_find_nearest_line,
+-    _bfd_generic_find_nearest_line_discriminator,
+-    _bfd_generic_find_line,
++    coff_find_line,
+     coff_find_inliner_info,
+     coff_bfd_make_debug_symbol,
+     _bfd_generic_read_minisymbols,
+--- a/bfd/coffgen.c
++++ b/bfd/coffgen.c
+@@ -2191,13 +2191,13 @@ _bfd_coff_is_local_label_name (bfd *abfd ATTRIBUTE_UNUSED,
+ 
+ bfd_boolean
+ coff_find_nearest_line_with_names (bfd *abfd,
+-                                   const struct dwarf_debug_section *debug_sections,
+-                                   asection *section,
+                                    asymbol **symbols,
++                                   asection *section,
+                                    bfd_vma offset,
+                                    const char **filename_ptr,
+                                    const char **functionname_ptr,
+-                                   unsigned int *line_ptr)
++                                   unsigned int *line_ptr,
++                                   const struct dwarf_debug_section *debug_sections)
+ {
+   bfd_boolean found;
+   unsigned int i;
+@@ -2222,10 +2222,9 @@ coff_find_nearest_line_with_names (bfd *abfd,
+     return TRUE;
+ 
+   /* Also try examining DWARF2 debugging information.  */
+-  if (_bfd_dwarf2_find_nearest_line (abfd, debug_sections,
+-                                     section, symbols, offset,
++  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr, NULL, 0,
++				     line_ptr, NULL, debug_sections, 0,
+ 				     &coff_data(abfd)->dwarf2_find_line_info))
+     return TRUE;
+ 
+@@ -2407,38 +2406,22 @@ coff_find_nearest_line_with_names (bfd *abfd,
+ 
+ bfd_boolean
+ coff_find_nearest_line (bfd *abfd,
+-			asection *section,
+ 			asymbol **symbols,
++			asection *section,
+ 			bfd_vma offset,
+ 			const char **filename_ptr,
+ 			const char **functionname_ptr,
+-			unsigned int *line_ptr)
++			unsigned int *line_ptr,
++			unsigned int *discriminator_ptr)
+ {
+-  return coff_find_nearest_line_with_names (abfd, dwarf_debug_sections,
+-                                            section, symbols, offset,
++  if (discriminator_ptr)
++    *discriminator_ptr = 0;
++  return coff_find_nearest_line_with_names (abfd, symbols, section, offset,
+                                             filename_ptr, functionname_ptr,
+-                                            line_ptr);
++                                            line_ptr, dwarf_debug_sections);
+ }
+ 
+ bfd_boolean
+-coff_find_nearest_line_discriminator (bfd *abfd,
+-				      asection *section,
+-				      asymbol **symbols,
+-				      bfd_vma offset,
+-				      const char **filename_ptr,
+-				      const char **functionname_ptr,
+-				      unsigned int *line_ptr,
+-				      unsigned int *discriminator)
+-{
+-  *discriminator = 0;
+-  return coff_find_nearest_line_with_names (abfd, dwarf_debug_sections,
+-                                            section, symbols, offset,
+-                                            filename_ptr, functionname_ptr,
+-                                            line_ptr);
+-}
+-
+-
+-bfd_boolean
+ coff_find_inliner_info (bfd *abfd,
+ 			const char **filename_ptr,
+ 			const char **functionname_ptr,
+--- a/bfd/dwarf1.c
++++ b/bfd/dwarf1.c
+@@ -449,8 +449,8 @@ dwarf1_unit_find_nearest_line (struct dwarf1_debug* stash,
+ 
+ bfd_boolean
+ _bfd_dwarf1_find_nearest_line (bfd *abfd,
+-			       asection *section,
+ 			       asymbol **symbols,
++			       asection *section,
+ 			       bfd_vma offset,
+ 			       const char **filename_ptr,
+ 			       const char **functionname_ptr,
+--- a/bfd/dwarf2.c
++++ b/bfd/dwarf2.c
+@@ -3602,19 +3602,19 @@ _bfd_dwarf2_slurp_debug_info (bfd *abfd, bfd *debug_bfd,
+    field and in the abbreviation offset, or zero to indicate that the
+    default value should be used.  */
+ 
+-static bfd_boolean
+-find_line (bfd *abfd,
+-	   const struct dwarf_debug_section *debug_sections,
+-	   asection *section,
+-	   bfd_vma offset,
+-	   asymbol *symbol,
+-	   asymbol **symbols,
+-	   const char **filename_ptr,
+-	   const char **functionname_ptr,
+-	   unsigned int *linenumber_ptr,
+-	   unsigned int *discriminator_ptr,
+-	   unsigned int addr_size,
+-	   void **pinfo)
++bfd_boolean
++_bfd_dwarf2_find_nearest_line (bfd *abfd,
++			       asymbol **symbols,
++			       asymbol *symbol,
++			       asection *section,
++			       bfd_vma offset,
++			       const char **filename_ptr,
++			       const char **functionname_ptr,
++			       unsigned int *linenumber_ptr,
++			       unsigned int *discriminator_ptr,
++			       const struct dwarf_debug_section *debug_sections,
++			       unsigned int addr_size,
++			       void **pinfo)
+ {
+   /* Read each compilation unit from the section .debug_info, and check
+      to see if it contains the address we are searching for.  If yes,
+@@ -3645,21 +3645,18 @@ find_line (bfd *abfd,
+ 
+   stash = (struct dwarf2_debug *) *pinfo;
+ 
+-  do_line = (section == NULL
+-	     && offset == 0
+-	     && functionname_ptr == NULL
+-	     && symbol != NULL);
++  do_line = symbol != NULL;
+   if (do_line)
+     {
+-      addr = symbol->value;
++      BFD_ASSERT (section == NULL && offset == 0 && functionname_ptr == NULL);
+       section = bfd_get_section (symbol);
++      addr = symbol->value;
+     }
+-  else if (section != NULL
+-	   && functionname_ptr != NULL
+-	   && symbol == NULL)
+-    addr = offset;
+   else
+-    abort ();
++    {
++      BFD_ASSERT (section != NULL && functionname_ptr != NULL);
++      addr = offset;
++    }
+ 
+   if (section->output_section)
+     addr += section->output_section->vma + section->output_offset;
+@@ -3874,45 +3871,6 @@ find_line (bfd *abfd,
+   return found;
+ }
+ 
+-/* The DWARF2 version of find_nearest_line.
+-   Return TRUE if the line is found without error.  */
+-
+-bfd_boolean
+-_bfd_dwarf2_find_nearest_line (bfd *abfd,
+-			       const struct dwarf_debug_section *debug_sections,
+-			       asection *section,
+-			       asymbol **symbols,
+-			       bfd_vma offset,
+-			       const char **filename_ptr,
+-			       const char **functionname_ptr,
+-			       unsigned int *linenumber_ptr,
+-			       unsigned int *discriminator_ptr,
+-			       unsigned int addr_size,
+-			       void **pinfo)
+-{
+-  return find_line (abfd, debug_sections, section, offset, NULL, symbols,
+-		    filename_ptr, functionname_ptr, linenumber_ptr,
+-		    discriminator_ptr, addr_size, pinfo);
+-}
+-
+-/* The DWARF2 version of find_line.
+-   Return TRUE if the line is found without error.  */
+-
+-bfd_boolean
+-_bfd_dwarf2_find_line (bfd *abfd,
+-		       asymbol **symbols,
+-		       asymbol *symbol,
+-		       const char **filename_ptr,
+-		       unsigned int *linenumber_ptr,
+-		       unsigned int *discriminator_ptr,
+-		       unsigned int addr_size,
+-		       void **pinfo)
+-{
+-  return find_line (abfd, dwarf_debug_sections, NULL, 0, symbol, symbols,
+-		    filename_ptr, NULL, linenumber_ptr, discriminator_ptr,
+-		    addr_size, pinfo);
+-}
+-
+ bfd_boolean
+ _bfd_dwarf2_find_inliner_info (bfd *abfd ATTRIBUTE_UNUSED,
+ 			       const char **filename_ptr,
+--- a/bfd/ecoff.c
++++ b/bfd/ecoff.c
+@@ -1704,12 +1704,13 @@ _bfd_ecoff_canonicalize_reloc (bfd *abfd,
+ 
+ bfd_boolean
+ _bfd_ecoff_find_nearest_line (bfd *abfd,
++			      asymbol **symbols ATTRIBUTE_UNUSED,
+ 			      asection *section,
+-			      asymbol **ignore_symbols ATTRIBUTE_UNUSED,
+ 			      bfd_vma offset,
+ 			      const char **filename_ptr,
+ 			      const char **functionname_ptr,
+-			      unsigned int *retline_ptr)
++			      unsigned int *retline_ptr,
++			      unsigned int *discriminator_ptr)
+ {
+   const struct ecoff_debug_swap * const debug_swap
+     = &ecoff_backend (abfd)->debug_swap;
+@@ -1730,8 +1731,10 @@ _bfd_ecoff_find_nearest_line (bfd *abfd,
+       if (ecoff_data (abfd)->find_line_info == NULL)
+ 	return FALSE;
+     }
+-  line_info = ecoff_data (abfd)->find_line_info;
+ 
++  if (discriminator_ptr)
++    *discriminator_ptr = 0;
++  line_info = ecoff_data (abfd)->find_line_info;
+   return _bfd_ecoff_locate_line (abfd, section, offset, debug_info,
+ 				 debug_swap, line_info, filename_ptr,
+ 				 functionname_ptr, retline_ptr);
+--- a/bfd/elf-bfd.h
++++ b/bfd/elf-bfd.h
+@@ -1898,18 +1898,10 @@ extern alent *_bfd_elf_get_lineno
+ extern bfd_boolean _bfd_elf_set_arch_mach
+   (bfd *, enum bfd_architecture, unsigned long);
+ extern bfd_boolean _bfd_elf_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **, const char **,
+-   unsigned int *);
+-extern bfd_boolean _bfd_elf_find_nearest_line_discriminator
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **, const char **,
+-   unsigned int *, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *);
+ extern bfd_boolean _bfd_elf_find_line
+   (bfd *, asymbol **, asymbol *, const char **, unsigned int *);
+-extern bfd_boolean _bfd_elf_find_line_discriminator
+-  (bfd *, asymbol **, asymbol *, const char **, unsigned int *, unsigned int *);
+-#define _bfd_generic_find_line _bfd_elf_find_line
+-#define _bfd_generic_find_nearest_line_discriminator \
+-        _bfd_elf_find_nearest_line_discriminator
+ extern bfd_boolean _bfd_elf_find_inliner_info
+   (bfd *, const char **, const char **, unsigned int *);
+ #define _bfd_elf_read_minisymbols _bfd_generic_read_minisymbols
+--- a/bfd/elf.c
++++ b/bfd/elf.c
+@@ -7549,8 +7549,8 @@ _bfd_elf_set_arch_mach (bfd *abfd,
+ 
+ static bfd_boolean
+ elf_find_function (bfd *abfd,
+-		   asection *section,
+ 		   asymbol **symbols,
++		   asection *section,
+ 		   bfd_vma offset,
+ 		   const char **filename_ptr,
+ 		   const char **functionname_ptr)
+@@ -7652,52 +7652,35 @@ elf_find_function (bfd *abfd,
+ 
+ bfd_boolean
+ _bfd_elf_find_nearest_line (bfd *abfd,
+-			    asection *section,
+ 			    asymbol **symbols,
++			    asection *section,
+ 			    bfd_vma offset,
+ 			    const char **filename_ptr,
+ 			    const char **functionname_ptr,
+-			    unsigned int *line_ptr)
+-{
+-  return _bfd_elf_find_nearest_line_discriminator (abfd, section, symbols,
+-                                                   offset, filename_ptr,
+-                                                   functionname_ptr,
+-                                                   line_ptr,
+-                                                   NULL);
+-}
+-
+-bfd_boolean
+-_bfd_elf_find_nearest_line_discriminator (bfd *abfd,
+-                                          asection *section,
+-                                          asymbol **symbols,
+-                                          bfd_vma offset,
+-                                          const char **filename_ptr,
+-                                          const char **functionname_ptr,
+-                                          unsigned int *line_ptr,
+-                                          unsigned int *discriminator_ptr)
++			    unsigned int *line_ptr,
++			    unsigned int *discriminator_ptr)
+ {
+   bfd_boolean found;
+ 
+-  if (_bfd_dwarf1_find_nearest_line (abfd, section, symbols, offset,
++  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr))
++				     line_ptr, discriminator_ptr,
++				     dwarf_debug_sections, 0,
++				     &elf_tdata (abfd)->dwarf2_find_line_info))
+     {
+       if (!*functionname_ptr)
+-	elf_find_function (abfd, section, symbols, offset,
++	elf_find_function (abfd, symbols, section, offset,
+ 			   *filename_ptr ? NULL : filename_ptr,
+ 			   functionname_ptr);
+ 
+       return TRUE;
+     }
+ 
+-  if (_bfd_dwarf2_find_nearest_line (abfd, dwarf_debug_sections,
+-                                     section, symbols, offset,
+-				     filename_ptr, functionname_ptr,
+-				     line_ptr, discriminator_ptr, 0,
+-				     &elf_tdata (abfd)->dwarf2_find_line_info))
++  if (_bfd_dwarf1_find_nearest_line (abfd, symbols, section, offset,
++				     filename_ptr, functionname_ptr, line_ptr))
+     {
+       if (!*functionname_ptr)
+-	elf_find_function (abfd, section, symbols, offset,
++	elf_find_function (abfd, symbols, section, offset,
+ 			   *filename_ptr ? NULL : filename_ptr,
+ 			   functionname_ptr);
+ 
+@@ -7715,7 +7698,7 @@ _bfd_elf_find_nearest_line_discriminator (bfd *abfd,
+   if (symbols == NULL)
+     return FALSE;
+ 
+-  if (! elf_find_function (abfd, section, symbols, offset,
++  if (! elf_find_function (abfd, symbols, section, offset,
+ 			   filename_ptr, functionname_ptr))
+     return FALSE;
+ 
+@@ -7729,20 +7712,10 @@ bfd_boolean
+ _bfd_elf_find_line (bfd *abfd, asymbol **symbols, asymbol *symbol,
+ 		    const char **filename_ptr, unsigned int *line_ptr)
+ {
+-  return _bfd_elf_find_line_discriminator (abfd, symbols, symbol,
+-		                           filename_ptr, line_ptr,
+-                                           NULL);
+-}
+-
+-bfd_boolean
+-_bfd_elf_find_line_discriminator (bfd *abfd, asymbol **symbols, asymbol *symbol,
+-                                  const char **filename_ptr,
+-                                  unsigned int *line_ptr,
+-                                  unsigned int *discriminator_ptr)
+-{
+-  return _bfd_dwarf2_find_line (abfd, symbols, symbol,
+-				filename_ptr, line_ptr, discriminator_ptr, 0,
+-				&elf_tdata (abfd)->dwarf2_find_line_info);
++  return _bfd_dwarf2_find_nearest_line (abfd, symbols, symbol, NULL, 0,
++					filename_ptr, NULL, line_ptr, NULL,
++					dwarf_debug_sections, 0,
++					&elf_tdata (abfd)->dwarf2_find_line_info);
+ }
+ 
+ /* After a call to bfd_find_nearest_line, successive calls to
+--- a/bfd/elf32-arm.c
++++ b/bfd/elf32-arm.c
+@@ -13083,8 +13083,8 @@ elf32_arm_is_target_special_symbol (bfd * abfd ATTRIBUTE_UNUSED, asymbol * sym)
+ 
+ static bfd_boolean
+ arm_elf_find_function (bfd *         abfd ATTRIBUTE_UNUSED,
+-		       asection *    section,
+ 		       asymbol **    symbols,
++		       asection *    section,
+ 		       bfd_vma       offset,
+ 		       const char ** filename_ptr,
+ 		       const char ** functionname_ptr)
+@@ -13145,31 +13145,33 @@ arm_elf_find_function (bfd *         abfd ATTRIBUTE_UNUSED,
+ 
+ static bfd_boolean
+ elf32_arm_find_nearest_line (bfd *          abfd,
+-			     asection *     section,
+ 			     asymbol **     symbols,
++			     asection *     section,
+ 			     bfd_vma        offset,
+ 			     const char **  filename_ptr,
+ 			     const char **  functionname_ptr,
+-			     unsigned int * line_ptr)
++			     unsigned int * line_ptr,
++			     unsigned int * discriminator_ptr)
+ {
+   bfd_boolean found = FALSE;
+ 
+-  /* We skip _bfd_dwarf1_find_nearest_line since no known ARM toolchain uses it.  */
+-
+-  if (_bfd_dwarf2_find_nearest_line (abfd, dwarf_debug_sections,
+-				     section, symbols, offset,
++  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr, NULL, 0,
++				     line_ptr, discriminator_ptr,
++				     dwarf_debug_sections, 0,
+ 				     & elf_tdata (abfd)->dwarf2_find_line_info))
+     {
+       if (!*functionname_ptr)
+-	arm_elf_find_function (abfd, section, symbols, offset,
++	arm_elf_find_function (abfd, symbols, section, offset,
+ 			       *filename_ptr ? NULL : filename_ptr,
+ 			       functionname_ptr);
+ 
+       return TRUE;
+     }
+ 
++  /* Skip _bfd_dwarf1_find_nearest_line since no known ARM toolchain
++     uses DWARF1.  */
++
+   if (! _bfd_stab_section_find_nearest_line (abfd, symbols, section, offset,
+ 					     & found, filename_ptr,
+ 					     functionname_ptr, line_ptr,
+@@ -13182,7 +13184,7 @@ elf32_arm_find_nearest_line (bfd *          abfd,
+   if (symbols == NULL)
+     return FALSE;
+ 
+-  if (! arm_elf_find_function (abfd, section, symbols, offset,
++  if (! arm_elf_find_function (abfd, symbols, section, offset,
+ 			       filename_ptr, functionname_ptr))
+     return FALSE;
+ 
+--- a/bfd/elf64-alpha.c
++++ b/bfd/elf64-alpha.c
+@@ -1442,17 +1442,19 @@ elf64_alpha_is_local_label_name (bfd *abfd ATTRIBUTE_UNUSED, const char *name)
+ }
+ 
+ static bfd_boolean
+-elf64_alpha_find_nearest_line (bfd *abfd, asection *section, asymbol **symbols,
+-			       bfd_vma offset, const char **filename_ptr,
++elf64_alpha_find_nearest_line (bfd *abfd, asymbol **symbols,
++			       asection *section, bfd_vma offset,
++			       const char **filename_ptr,
+ 			       const char **functionname_ptr,
+-			       unsigned int *line_ptr)
++			       unsigned int *line_ptr,
++			       unsigned int *discriminator_ptr)
+ {
+   asection *msec;
+ 
+-  if (_bfd_dwarf2_find_nearest_line (abfd, dwarf_debug_sections,
+-                                     section, symbols, offset,
++  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr, NULL, 0,
++				     line_ptr, discriminator_ptr,
++				     dwarf_debug_sections, 0,
+ 				     &elf_tdata (abfd)->dwarf2_find_line_info))
+     return TRUE;
+ 
+@@ -1532,9 +1534,9 @@ elf64_alpha_find_nearest_line (bfd *abfd, asection *section, asymbol **symbols,
+ 
+   /* Fall back on the generic ELF find_nearest_line routine.  */
+ 
+-  return _bfd_elf_find_nearest_line (abfd, section, symbols, offset,
++  return _bfd_elf_find_nearest_line (abfd, symbols, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr);
++				     line_ptr, discriminator_ptr);
+ }
+ 
+ /* Structure used to pass information to alpha_elf_output_extsym.  */
+--- a/bfd/elfnn-aarch64.c
++++ b/bfd/elfnn-aarch64.c
+@@ -5353,8 +5353,8 @@ elfNN_aarch64_is_target_special_symbol (bfd *abfd ATTRIBUTE_UNUSED,
+ 
+ static bfd_boolean
+ aarch64_elf_find_function (bfd *abfd ATTRIBUTE_UNUSED,
+-			   asection *section,
+ 			   asymbol **symbols,
++			   asection *section,
+ 			   bfd_vma offset,
+ 			   const char **filename_ptr,
+ 			   const char **functionname_ptr)
+@@ -5413,32 +5413,33 @@ aarch64_elf_find_function (bfd *abfd ATTRIBUTE_UNUSED,
+ 
+ static bfd_boolean
+ elfNN_aarch64_find_nearest_line (bfd *abfd,
+-				 asection *section,
+ 				 asymbol **symbols,
++				 asection *section,
+ 				 bfd_vma offset,
+ 				 const char **filename_ptr,
+ 				 const char **functionname_ptr,
+-				 unsigned int *line_ptr)
++				 unsigned int *line_ptr,
++				 unsigned int *discriminator_ptr)
+ {
+   bfd_boolean found = FALSE;
+ 
+-  /* We skip _bfd_dwarf1_find_nearest_line since no known AArch64
+-     toolchain uses it.  */
+-
+-  if (_bfd_dwarf2_find_nearest_line (abfd, dwarf_debug_sections,
+-				     section, symbols, offset,
++  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr, NULL, 0,
++				     line_ptr, discriminator_ptr,
++				     dwarf_debug_sections, 0,
+ 				     &elf_tdata (abfd)->dwarf2_find_line_info))
+     {
+       if (!*functionname_ptr)
+-	aarch64_elf_find_function (abfd, section, symbols, offset,
++	aarch64_elf_find_function (abfd, symbols, section, offset,
+ 				   *filename_ptr ? NULL : filename_ptr,
+ 				   functionname_ptr);
+ 
+       return TRUE;
+     }
+ 
++  /* Skip _bfd_dwarf1_find_nearest_line since no known AArch64
++     toolchain uses DWARF1.  */
++
+   if (!_bfd_stab_section_find_nearest_line (abfd, symbols, section, offset,
+ 					    &found, filename_ptr,
+ 					    functionname_ptr, line_ptr,
+@@ -5451,7 +5452,7 @@ elfNN_aarch64_find_nearest_line (bfd *abfd,
+   if (symbols == NULL)
+     return FALSE;
+ 
+-  if (!aarch64_elf_find_function (abfd, section, symbols, offset,
++  if (!aarch64_elf_find_function (abfd, symbols, section, offset,
+ 				  filename_ptr, functionname_ptr))
+     return FALSE;
+ 
+--- a/bfd/elfxx-mips.c
++++ b/bfd/elfxx-mips.c
+@@ -12591,24 +12591,26 @@ struct mips_elf_find_line
+ };
+ 
+ bfd_boolean
+-_bfd_mips_elf_find_nearest_line (bfd *abfd, asection *section,
+-				 asymbol **symbols, bfd_vma offset,
++_bfd_mips_elf_find_nearest_line (bfd *abfd, asymbol **symbols,
++				 asection *section, bfd_vma offset,
+ 				 const char **filename_ptr,
+ 				 const char **functionname_ptr,
+-				 unsigned int *line_ptr)
++				 unsigned int *line_ptr,
++				 unsigned int *discriminator_ptr)
+ {
+   asection *msec;
+ 
+-  if (_bfd_dwarf1_find_nearest_line (abfd, section, symbols, offset,
++  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr))
++				     line_ptr, discriminator_ptr,
++				     dwarf_debug_sections,
++				     ABI_64_P (abfd) ? 8 : 0,
++				     &elf_tdata (abfd)->dwarf2_find_line_info))
+     return TRUE;
+ 
+-  if (_bfd_dwarf2_find_nearest_line (abfd, dwarf_debug_sections,
+-                                     section, symbols, offset,
++  if (_bfd_dwarf1_find_nearest_line (abfd, symbols, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr, NULL, ABI_64_P (abfd) ? 8 : 0,
+-				     &elf_tdata (abfd)->dwarf2_find_line_info))
++				     line_ptr))
+     return TRUE;
+ 
+   msec = bfd_get_section_by_name (abfd, ".mdebug");
+@@ -12687,9 +12689,9 @@ _bfd_mips_elf_find_nearest_line (bfd *abfd, asection *section,
+ 
+   /* Fall back on the generic ELF find_nearest_line routine.  */
+ 
+-  return _bfd_elf_find_nearest_line (abfd, section, symbols, offset,
++  return _bfd_elf_find_nearest_line (abfd, symbols, section, offset,
+ 				     filename_ptr, functionname_ptr,
+-				     line_ptr);
++				     line_ptr, discriminator_ptr);
+ }
+ 
+ bfd_boolean
+--- a/bfd/elfxx-mips.h
++++ b/bfd/elfxx-mips.h
+@@ -86,8 +86,8 @@ extern bfd_boolean _bfd_mips_elf_ignore_discarded_relocs
+ extern bfd_boolean _bfd_mips_elf_is_target_special_symbol
+   (bfd *abfd, asymbol *sym);
+ extern bfd_boolean _bfd_mips_elf_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *);
+ extern bfd_boolean _bfd_mips_elf_find_inliner_info
+   (bfd *, const char **, const char **, unsigned int *);
+ extern bfd_boolean _bfd_mips_elf_set_section_contents
+--- a/bfd/elfxx-target.h
++++ b/bfd/elfxx-target.h
+@@ -49,6 +49,9 @@
+ #ifndef bfd_elfNN_find_nearest_line
+ #define bfd_elfNN_find_nearest_line	_bfd_elf_find_nearest_line
+ #endif
++#ifndef bfd_elfNN_find_line
++#define bfd_elfNN_find_line		_bfd_elf_find_line
++#endif
+ #ifndef bfd_elfNN_find_inliner_info
+ #define bfd_elfNN_find_inliner_info	_bfd_elf_find_inliner_info
+ #endif
+--- a/bfd/i386msdos.c
++++ b/bfd/i386msdos.c
+@@ -163,6 +163,7 @@ msdos_set_section_contents (bfd *abfd,
+ #define msdos_print_symbol _bfd_nosymbols_print_symbol
+ #define msdos_get_symbol_info _bfd_nosymbols_get_symbol_info
+ #define msdos_find_nearest_line _bfd_nosymbols_find_nearest_line
++#define msdos_find_line _bfd_nosymbols_find_line
+ #define msdos_find_inliner_info _bfd_nosymbols_find_inliner_info
+ #define msdos_get_lineno _bfd_nosymbols_get_lineno
+ #define msdos_bfd_is_target_special_symbol ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
+--- a/bfd/i386os9k.c
++++ b/bfd/i386os9k.c
+@@ -154,6 +154,7 @@ os9k_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
+ 
+ #define aout_32_close_and_cleanup aout_32_bfd_free_cached_info
+ 
++#define aout_32_find_line	      _bfd_nosymbols_find_line
+ #define aout_32_bfd_make_debug_symbol _bfd_nosymbols_bfd_make_debug_symbol
+ 
+ #define aout_32_bfd_reloc_type_lookup _bfd_norelocs_bfd_reloc_type_lookup
+--- a/bfd/ieee.c
++++ b/bfd/ieee.c
+@@ -3675,26 +3675,9 @@ ieee_openr_next_archived_file (bfd *arch, bfd *prev)
+     }
+ }
+ 
+-static bfd_boolean
+-ieee_find_nearest_line (bfd *abfd ATTRIBUTE_UNUSED,
+-			asection *section ATTRIBUTE_UNUSED,
+-			asymbol **symbols ATTRIBUTE_UNUSED,
+-			bfd_vma offset ATTRIBUTE_UNUSED,
+-			const char **filename_ptr ATTRIBUTE_UNUSED,
+-			const char **functionname_ptr ATTRIBUTE_UNUSED,
+-			unsigned int *line_ptr ATTRIBUTE_UNUSED)
+-{
+-  return FALSE;
+-}
+-
+-static bfd_boolean
+-ieee_find_inliner_info (bfd *abfd ATTRIBUTE_UNUSED,
+-			const char **filename_ptr ATTRIBUTE_UNUSED,
+-			const char **functionname_ptr ATTRIBUTE_UNUSED,
+-			unsigned int *line_ptr ATTRIBUTE_UNUSED)
+-{
+-  return FALSE;
+-}
++#define ieee_find_nearest_line _bfd_nosymbols_find_nearest_line
++#define ieee_find_line         _bfd_nosymbols_find_line
++#define ieee_find_inliner_info _bfd_nosymbols_find_inliner_info
+ 
+ static int
+ ieee_generic_stat_arch_elt (bfd *abfd, struct stat *buf)
+--- a/bfd/ihex.c
++++ b/bfd/ihex.c
+@@ -922,6 +922,7 @@ ihex_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
+ #define ihex_bfd_is_local_label_name              _bfd_nosymbols_bfd_is_local_label_name
+ #define ihex_get_lineno                           _bfd_nosymbols_get_lineno
+ #define ihex_find_nearest_line                    _bfd_nosymbols_find_nearest_line
++#define ihex_find_line                            _bfd_nosymbols_find_line
+ #define ihex_find_inliner_info                    _bfd_nosymbols_find_inliner_info
+ #define ihex_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
+ #define ihex_read_minisymbols                     _bfd_nosymbols_read_minisymbols
+--- a/bfd/libaout.h
++++ b/bfd/libaout.h
+@@ -551,8 +551,8 @@ extern void NAME (aout, get_symbol_info)
+   (bfd *, asymbol *, symbol_info *);
+ 
+ extern bfd_boolean NAME (aout, find_nearest_line)
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *);
+ 
+ extern long NAME (aout, read_minisymbols)
+   (bfd *, bfd_boolean, void * *, unsigned int *);
+--- a/bfd/libbfd-in.h
++++ b/bfd/libbfd-in.h
+@@ -399,8 +399,13 @@ extern bfd_boolean _bfd_vms_lib_ia64_mkarchive (bfd *abfd);
+ #define _bfd_nosymbols_get_lineno \
+   ((alent *(*) (bfd *, asymbol *)) bfd_nullvoidptr)
+ #define _bfd_nosymbols_find_nearest_line \
+-  ((bfd_boolean (*) (bfd *, asection *, asymbol **, bfd_vma, const char **, \
+-		     const char **, unsigned int *)) \
++  ((bfd_boolean (*) (bfd *, asymbol **, asection *, bfd_vma,		\
++		     const char **, const char **, unsigned int *,	\
++		     unsigned int *))					\
++   bfd_false)
++#define _bfd_nosymbols_find_line \
++  ((bfd_boolean (*) (bfd *, asymbol **, asymbol *,	\
++		     const char **, unsigned int *))	\
+    bfd_false)
+ #define _bfd_nosymbols_find_inliner_info \
+   ((bfd_boolean (*) (bfd *, const char **, const char **, unsigned int *)) \
+@@ -520,8 +525,8 @@ extern bfd_boolean _bfd_stab_section_find_nearest_line
+ 
+ /* Find the nearest line using DWARF 1 debugging information.  */
+ extern bfd_boolean _bfd_dwarf1_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *);
+ 
+ struct dwarf_debug_section
+ {
+@@ -536,21 +541,9 @@ extern const struct dwarf_debug_section dwarf_debug_sections[];
+ 
+ /* Find the nearest line using DWARF 2 debugging information.  */
+ extern bfd_boolean _bfd_dwarf2_find_nearest_line
+-  (bfd *, const struct dwarf_debug_section *, asection *, asymbol **, bfd_vma,
+-   const char **, const char **, unsigned int *, unsigned int *, unsigned int,
+-   void **);
+-
+-/* Find the line using DWARF 2 debugging information.  */
+-extern bfd_boolean _bfd_dwarf2_find_line
+-  (bfd *, asymbol **, asymbol *, const char **,
+-   unsigned int *, unsigned int *, unsigned int, void **);
+-
+-bfd_boolean _bfd_generic_find_line
+-  (bfd *, asymbol **, asymbol *, const char **, unsigned int *);
+-
+-bfd_boolean _bfd_generic_find_nearest_line_discriminator
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **, const char **,
+-   unsigned int *, unsigned int *);
++  (bfd *, asymbol **, asymbol *, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *,
++   const struct dwarf_debug_section *, unsigned int, void **);
+ 
+ /* Find inliner info after calling bfd_find_nearest_line. */
+ extern bfd_boolean _bfd_dwarf2_find_inliner_info
+--- a/bfd/libbfd.c
++++ b/bfd/libbfd.c
+@@ -1105,29 +1105,6 @@ read_signed_leb128 (bfd *abfd ATTRIBUTE_UNUSED,
+ }
+ 
+ bfd_boolean
+-_bfd_generic_find_line (bfd *abfd ATTRIBUTE_UNUSED,
+-		       asymbol **symbols ATTRIBUTE_UNUSED,
+-		       asymbol *symbol ATTRIBUTE_UNUSED,
+-		       const char **filename_ptr ATTRIBUTE_UNUSED,
+-		       unsigned int *linenumber_ptr ATTRIBUTE_UNUSED)
+-{
+-  return FALSE;
+-}
+-
+-bfd_boolean
+-_bfd_generic_find_nearest_line_discriminator (bfd *abfd ATTRIBUTE_UNUSED,
+-                                              asection *section ATTRIBUTE_UNUSED,
+-                                              asymbol **symbols ATTRIBUTE_UNUSED,
+-                                              bfd_vma offset ATTRIBUTE_UNUSED,
+-                                              const char **filename_ptr ATTRIBUTE_UNUSED,
+-                                              const char **functionname_ptr ATTRIBUTE_UNUSED,
+-                                              unsigned int *line_ptr ATTRIBUTE_UNUSED,
+-                                              unsigned int *discriminator_ptr ATTRIBUTE_UNUSED)
+-{
+-  return FALSE;
+-}
+-
+-bfd_boolean
+ _bfd_generic_init_private_section_data (bfd *ibfd ATTRIBUTE_UNUSED,
+ 					asection *isec ATTRIBUTE_UNUSED,
+ 					bfd *obfd ATTRIBUTE_UNUSED,
+--- a/bfd/libbfd.h
++++ b/bfd/libbfd.h
+@@ -404,8 +404,13 @@ extern bfd_boolean _bfd_vms_lib_ia64_mkarchive (bfd *abfd);
+ #define _bfd_nosymbols_get_lineno \
+   ((alent *(*) (bfd *, asymbol *)) bfd_nullvoidptr)
+ #define _bfd_nosymbols_find_nearest_line \
+-  ((bfd_boolean (*) (bfd *, asection *, asymbol **, bfd_vma, const char **, \
+-		     const char **, unsigned int *)) \
++  ((bfd_boolean (*) (bfd *, asymbol **, asection *, bfd_vma,		\
++		     const char **, const char **, unsigned int *,	\
++		     unsigned int *))					\
++   bfd_false)
++#define _bfd_nosymbols_find_line \
++  ((bfd_boolean (*) (bfd *, asymbol **, asymbol *,	\
++		     const char **, unsigned int *))	\
+    bfd_false)
+ #define _bfd_nosymbols_find_inliner_info \
+   ((bfd_boolean (*) (bfd *, const char **, const char **, unsigned int *)) \
+@@ -525,8 +530,8 @@ extern bfd_boolean _bfd_stab_section_find_nearest_line
+ 
+ /* Find the nearest line using DWARF 1 debugging information.  */
+ extern bfd_boolean _bfd_dwarf1_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *);
+ 
+ struct dwarf_debug_section
+ {
+@@ -541,21 +546,9 @@ extern const struct dwarf_debug_section dwarf_debug_sections[];
+ 
+ /* Find the nearest line using DWARF 2 debugging information.  */
+ extern bfd_boolean _bfd_dwarf2_find_nearest_line
+-  (bfd *, const struct dwarf_debug_section *, asection *, asymbol **, bfd_vma,
+-   const char **, const char **, unsigned int *, unsigned int *, unsigned int,
+-   void **);
+-
+-/* Find the line using DWARF 2 debugging information.  */
+-extern bfd_boolean _bfd_dwarf2_find_line
+-  (bfd *, asymbol **, asymbol *, const char **,
+-   unsigned int *, unsigned int *, unsigned int, void **);
+-
+-bfd_boolean _bfd_generic_find_line
+-  (bfd *, asymbol **, asymbol *, const char **, unsigned int *);
+-
+-bfd_boolean _bfd_generic_find_nearest_line_discriminator
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **, const char **,
+-   unsigned int *, unsigned int *);
++  (bfd *, asymbol **, asymbol *, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *,
++   const struct dwarf_debug_section *, unsigned int, void **);
+ 
+ /* Find inliner info after calling bfd_find_nearest_line. */
+ extern bfd_boolean _bfd_dwarf2_find_inliner_info
+--- a/bfd/libcoff-in.h
++++ b/bfd/libcoff-in.h
+@@ -355,15 +355,13 @@ extern bfd_boolean _bfd_coff_is_local_label_name
+ extern asymbol *coff_bfd_make_debug_symbol
+   (bfd *, void *, unsigned long);
+ extern bfd_boolean coff_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *);
+-extern bfd_boolean coff_find_nearest_line_discriminator
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *);
++#define coff_find_line _bfd_nosymbols_find_line
+ struct dwarf_debug_section;
+ extern bfd_boolean coff_find_nearest_line_with_names
+-  (bfd *, const struct dwarf_debug_section *, asection *, asymbol **,
+-   bfd_vma, const char **, const char **, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma, const char **, const char **,
++   unsigned int *, const struct dwarf_debug_section *);
+ extern bfd_boolean coff_find_inliner_info
+   (bfd *, const char **, const char **, unsigned int *);
+ extern int coff_sizeof_headers
+--- a/bfd/libcoff.h
++++ b/bfd/libcoff.h
+@@ -359,15 +359,13 @@ extern bfd_boolean _bfd_coff_is_local_label_name
+ extern asymbol *coff_bfd_make_debug_symbol
+   (bfd *, void *, unsigned long);
+ extern bfd_boolean coff_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *);
+-extern bfd_boolean coff_find_nearest_line_discriminator
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **,
+-   const char **, unsigned int *, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *);
++#define coff_find_line _bfd_nosymbols_find_line
+ struct dwarf_debug_section;
+ extern bfd_boolean coff_find_nearest_line_with_names
+-  (bfd *, const struct dwarf_debug_section *, asection *, asymbol **,
+-   bfd_vma, const char **, const char **, unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma, const char **, const char **,
++   unsigned int *, const struct dwarf_debug_section *);
+ extern bfd_boolean coff_find_inliner_info
+   (bfd *, const char **, const char **, unsigned int *);
+ extern int coff_sizeof_headers
+--- a/bfd/libecoff.h
++++ b/bfd/libecoff.h
+@@ -289,8 +289,9 @@ extern bfd_boolean _bfd_ecoff_bfd_is_local_label_name
+   (bfd *, const char *);
+ #define _bfd_ecoff_get_lineno _bfd_nosymbols_get_lineno
+ extern bfd_boolean _bfd_ecoff_find_nearest_line
+-  (bfd *, asection *, asymbol **, bfd_vma, const char **, const char **,
+-   unsigned int *);
++  (bfd *, asymbol **, asection *, bfd_vma,
++   const char **, const char **, unsigned int *, unsigned int *);
++#define _bfd_ecoff_find_line _bfd_nosymbols_find_line
+ #define _bfd_ecoff_bfd_make_debug_symbol _bfd_nosymbols_bfd_make_debug_symbol
+ #define _bfd_ecoff_read_minisymbols _bfd_generic_read_minisymbols
+ #define _bfd_ecoff_minisymbol_to_symbol _bfd_generic_minisymbol_to_symbol
+--- a/bfd/mach-o.c
++++ b/bfd/mach-o.c
+@@ -5631,12 +5631,13 @@ bfd_mach_o_follow_dsym (bfd *abfd)
+ 
+ bfd_boolean
+ bfd_mach_o_find_nearest_line (bfd *abfd,
+-			      asection *section,
+ 			      asymbol **symbols,
++			      asection *section,
+ 			      bfd_vma offset,
+ 			      const char **filename_ptr,
+ 			      const char **functionname_ptr,
+-			      unsigned int *line_ptr)
++			      unsigned int *line_ptr,
++			      unsigned int *discriminator_ptr)
+ {
+   bfd_mach_o_data_struct *mdata = bfd_mach_o_get_data (abfd);
+   if (mdata == NULL)
+@@ -5668,13 +5669,11 @@ bfd_mach_o_find_nearest_line (bfd *abfd,
+     default:
+       return FALSE;
+     }
+-  if (_bfd_dwarf2_find_nearest_line (abfd, dwarf_debug_sections,
+-				     section, symbols, offset,
+-				     filename_ptr, functionname_ptr,
+-				     line_ptr, NULL, 0,
+-				     &mdata->dwarf2_find_line_info))
+-    return TRUE;
+-  return FALSE;
++  return _bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
++					filename_ptr, functionname_ptr,
++					line_ptr, discriminator_ptr,
++					dwarf_debug_sections, 0,
++					&mdata->dwarf2_find_line_info);
+ }
+ 
+ bfd_boolean
+--- a/bfd/mach-o.h
++++ b/bfd/mach-o.h
+@@ -680,9 +680,11 @@ unsigned int bfd_mach_o_get_section_attribute_from_name (const char *);
+ 
+ void bfd_mach_o_convert_section_name_to_bfd (bfd *, const char *, const char *,
+ 					     const char **, flagword *);
+-bfd_boolean bfd_mach_o_find_nearest_line (bfd *, asection *, asymbol **,
+-                                          bfd_vma, const char **,
+-                                          const char **, unsigned int *);
++bfd_boolean bfd_mach_o_find_nearest_line (bfd *, asymbol **,
++					  asection *, bfd_vma,
++					  const char **, const char **,
++					  unsigned int *, unsigned int *);
++#define bfd_mach_o_find_line _bfd_nosymbols_find_line
+ bfd_boolean bfd_mach_o_close_and_cleanup (bfd *);
+ bfd_boolean bfd_mach_o_free_cached_info (bfd *);
+ 
+--- a/bfd/mmo.c
++++ b/bfd/mmo.c
+@@ -3210,6 +3210,7 @@ mmo_write_object_contents (bfd *abfd)
+ /* FIXME: We can do better on this one, if we have a dwarf2 .debug_line
+    section or if MMO line numbers are implemented.  */
+ #define mmo_find_nearest_line _bfd_nosymbols_find_nearest_line
++#define mmo_find_line _bfd_nosymbols_find_line
+ #define mmo_find_inliner_info _bfd_nosymbols_find_inliner_info
+ #define mmo_make_empty_symbol _bfd_generic_make_empty_symbol
+ #define mmo_bfd_make_debug_symbol _bfd_nosymbols_bfd_make_debug_symbol
+--- a/bfd/nlm-target.h
++++ b/bfd/nlm-target.h
+@@ -29,6 +29,7 @@
+ #define nlm_bfd_is_target_special_symbol ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
+ #define nlm_get_lineno                          _bfd_nosymbols_get_lineno
+ #define nlm_find_nearest_line                   _bfd_nosymbols_find_nearest_line
++#define nlm_find_line                           _bfd_nosymbols_find_line
+ #define nlm_find_inliner_info                   _bfd_nosymbols_find_inliner_info
+ #define nlm_bfd_make_debug_symbol               _bfd_nosymbols_bfd_make_debug_symbol
+ #define nlm_read_minisymbols                    _bfd_generic_read_minisymbols
+--- a/bfd/oasys.c
++++ b/bfd/oasys.c
+@@ -1129,26 +1129,9 @@ oasys_openr_next_archived_file (bfd *arch, bfd *prev)
+   return NULL;
+ }
+ 
+-static bfd_boolean
+-oasys_find_nearest_line (bfd *abfd ATTRIBUTE_UNUSED,
+-			 asection *section ATTRIBUTE_UNUSED,
+-			 asymbol **symbols ATTRIBUTE_UNUSED,
+-			 bfd_vma offset ATTRIBUTE_UNUSED,
+-			 const char **filename_ptr ATTRIBUTE_UNUSED,
+-			 const char **functionname_ptr ATTRIBUTE_UNUSED,
+-			 unsigned int *line_ptr ATTRIBUTE_UNUSED)
+-{
+-  return FALSE;
+-}
+-
+-static bfd_boolean
+-oasys_find_inliner_info (bfd *abfd ATTRIBUTE_UNUSED,
+-			 const char **filename_ptr ATTRIBUTE_UNUSED,
+-			 const char **functionname_ptr ATTRIBUTE_UNUSED,
+-			 unsigned int *line_ptr ATTRIBUTE_UNUSED)
+-{
+-  return FALSE;
+-}
++#define oasys_find_nearest_line _bfd_nosymbols_find_nearest_line
++#define oasys_find_line         _bfd_nosymbols_find_line
++#define oasys_find_inliner_info _bfd_nosymbols_find_inliner_info
+ 
+ static int
+ oasys_generic_stat_arch_elt (bfd *abfd, struct stat *buf)
+--- a/bfd/pdp11.c
++++ b/bfd/pdp11.c
+@@ -2182,12 +2182,13 @@ NAME (aout, minisymbol_to_symbol) (bfd *abfd,
+ 
+ bfd_boolean
+ NAME (aout, find_nearest_line) (bfd *abfd,
+-				asection *section,
+ 				asymbol **symbols,
++				asection *section,
+ 				bfd_vma offset,
+ 				const char **filename_ptr,
+ 				const char **functionname_ptr,
+-				unsigned int *line_ptr)
++				unsigned int *line_ptr,
++				unsigned int *discriminator_ptr)
+ {
+   /* Run down the file looking for the filename, function and linenumber.  */
+   asymbol **p;
+@@ -2204,6 +2205,8 @@ NAME (aout, find_nearest_line) (bfd *abfd,
+   *filename_ptr = abfd->filename;
+   *functionname_ptr = 0;
+   *line_ptr = 0;
++  if (discriminator_ptr)
++    *discriminator_ptr = 0;
+ 
+   if (symbols != NULL)
+     {
+--- a/bfd/pef.c
++++ b/bfd/pef.c
+@@ -41,6 +41,7 @@
+ #define bfd_pef_bfd_is_target_special_symbol ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
+ #define bfd_pef_get_lineno                          _bfd_nosymbols_get_lineno
+ #define bfd_pef_find_nearest_line                   _bfd_nosymbols_find_nearest_line
++#define bfd_pef_find_line                           _bfd_nosymbols_find_line
+ #define bfd_pef_find_inliner_info                   _bfd_nosymbols_find_inliner_info
+ #define bfd_pef_bfd_make_debug_symbol               _bfd_nosymbols_bfd_make_debug_symbol
+ #define bfd_pef_read_minisymbols                    _bfd_generic_read_minisymbols
+--- a/bfd/plugin.c
++++ b/bfd/plugin.c
+@@ -83,6 +83,7 @@ dlerror (void)
+ #define bfd_plugin_bfd_is_target_special_symbol       ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
+ #define bfd_plugin_get_lineno                         _bfd_nosymbols_get_lineno
+ #define bfd_plugin_find_nearest_line                  _bfd_nosymbols_find_nearest_line
++#define bfd_plugin_find_line                          _bfd_nosymbols_find_line
+ #define bfd_plugin_find_inliner_info                  _bfd_nosymbols_find_inliner_info
+ #define bfd_plugin_bfd_make_debug_symbol              _bfd_nosymbols_bfd_make_debug_symbol
+ #define bfd_plugin_read_minisymbols                   _bfd_generic_read_minisymbols
+--- a/bfd/ppcboot.c
++++ b/bfd/ppcboot.c
+@@ -331,6 +331,7 @@ ppcboot_get_symbol_info (bfd *ignore_abfd ATTRIBUTE_UNUSED,
+ #define ppcboot_bfd_is_local_label_name bfd_generic_is_local_label_name
+ #define ppcboot_get_lineno _bfd_nosymbols_get_lineno
+ #define ppcboot_find_nearest_line _bfd_nosymbols_find_nearest_line
++#define ppcboot_find_line _bfd_nosymbols_find_line
+ #define ppcboot_find_inliner_info _bfd_nosymbols_find_inliner_info
+ #define ppcboot_bfd_make_debug_symbol _bfd_nosymbols_bfd_make_debug_symbol
+ #define ppcboot_read_minisymbols _bfd_generic_read_minisymbols
+--- a/bfd/som.c
++++ b/bfd/som.c
+@@ -5715,18 +5715,22 @@ som_set_arch_mach (bfd *abfd,
+ 
+ static bfd_boolean
+ som_find_nearest_line (bfd *abfd,
+-		       asection *section,
+ 		       asymbol **symbols,
++		       asection *section,
+ 		       bfd_vma offset,
+ 		       const char **filename_ptr,
+ 		       const char **functionname_ptr,
+-		       unsigned int *line_ptr)
++		       unsigned int *line_ptr,
++		       unsigned int *discriminator_ptr)
+ {
+   bfd_boolean found;
+   asymbol *func;
+   bfd_vma low_func;
+   asymbol **p;
+ 
++  if (discriminator_ptr)
++    *discriminator_ptr = 0;
++
+   if (! _bfd_stab_section_find_nearest_line (abfd, symbols, section, offset,
+                                              & found, filename_ptr,
+                                              functionname_ptr, line_ptr,
+@@ -6713,6 +6717,7 @@ som_bfd_link_split_section (bfd *abfd ATTRIBUTE_UNUSED, asection *sec)
+   return som_is_subspace (sec) && sec->size > 240000;
+ }
+ 
++#define som_find_line			        _bfd_nosymbols_find_line
+ #define	som_close_and_cleanup		        som_bfd_free_cached_info
+ #define som_read_ar_hdr			        _bfd_generic_read_ar_hdr
+ #define som_write_ar_hdr		        _bfd_generic_write_ar_hdr
+--- a/bfd/srec.c
++++ b/bfd/srec.c
+@@ -1255,6 +1255,7 @@ srec_print_symbol (bfd *abfd,
+ #define srec_bfd_is_local_label_name              bfd_generic_is_local_label_name
+ #define srec_get_lineno                           _bfd_nosymbols_get_lineno
+ #define srec_find_nearest_line                    _bfd_nosymbols_find_nearest_line
++#define srec_find_line                            _bfd_nosymbols_find_line
+ #define srec_find_inliner_info                    _bfd_nosymbols_find_inliner_info
+ #define srec_make_empty_symbol                    _bfd_generic_make_empty_symbol
+ #define srec_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
+--- a/bfd/targets.c
++++ b/bfd/targets.c
+@@ -367,8 +367,7 @@ BFD_JUMP_TABLE macros.
+ .  NAME##_bfd_is_target_special_symbol, \
+ .  NAME##_get_lineno, \
+ .  NAME##_find_nearest_line, \
+-.  _bfd_generic_find_nearest_line_discriminator, \
+-.  _bfd_generic_find_line, \
++.  NAME##_find_line, \
+ .  NAME##_find_inliner_info, \
+ .  NAME##_bfd_make_debug_symbol, \
+ .  NAME##_read_minisymbols, \
+@@ -389,10 +388,7 @@ BFD_JUMP_TABLE macros.
+ .  bfd_boolean (*_bfd_is_target_special_symbol) (bfd *, asymbol *);
+ .  alent *     (*_get_lineno) (bfd *, struct bfd_symbol *);
+ .  bfd_boolean (*_bfd_find_nearest_line)
+-.    (bfd *, struct bfd_section *, struct bfd_symbol **, bfd_vma,
+-.     const char **, const char **, unsigned int *);
+-.  bfd_boolean (*_bfd_find_nearest_line_discriminator)
+-.    (bfd *, struct bfd_section *, struct bfd_symbol **, bfd_vma,
++.    (bfd *, struct bfd_symbol **, struct bfd_section *, bfd_vma,
+ .     const char **, const char **, unsigned int *, unsigned int *);
+ .  bfd_boolean (*_bfd_find_line)
+ .    (bfd *, struct bfd_symbol **, struct bfd_symbol *,
+--- a/bfd/tekhex.c
++++ b/bfd/tekhex.c
+@@ -935,6 +935,7 @@ tekhex_print_symbol (bfd *abfd,
+ #define tekhex_bfd_is_local_label_name               bfd_generic_is_local_label_name
+ #define tekhex_get_lineno                           _bfd_nosymbols_get_lineno
+ #define tekhex_find_nearest_line                    _bfd_nosymbols_find_nearest_line
++#define tekhex_find_line                            _bfd_nosymbols_find_line
+ #define tekhex_find_inliner_info                    _bfd_nosymbols_find_inliner_info
+ #define tekhex_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
+ #define tekhex_read_minisymbols                     _bfd_generic_read_minisymbols
+--- a/bfd/versados.c
++++ b/bfd/versados.c
+@@ -794,6 +794,7 @@ versados_canonicalize_reloc (bfd *abfd,
+ #define versados_bfd_is_local_label_name              bfd_generic_is_local_label_name
+ #define versados_get_lineno                           _bfd_nosymbols_get_lineno
+ #define versados_find_nearest_line                    _bfd_nosymbols_find_nearest_line
++#define versados_find_line                            _bfd_nosymbols_find_line
+ #define versados_find_inliner_info                    _bfd_nosymbols_find_inliner_info
+ #define versados_make_empty_symbol                    _bfd_generic_make_empty_symbol
+ #define versados_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
+--- a/bfd/vms-alpha.c
++++ b/bfd/vms-alpha.c
+@@ -4575,10 +4575,14 @@ module_find_nearest_line (bfd *abfd, struct module *module, bfd_vma addr,
+    location.  */
+ 
+ static bfd_boolean
+-_bfd_vms_find_nearest_dst_line (bfd *abfd, asection *section,
+-				asymbol **symbols ATTRIBUTE_UNUSED,
+-				bfd_vma offset, const char **file,
+-				const char **func, unsigned int *line)
++_bfd_vms_find_nearest_line (bfd *abfd,
++			    asymbol **symbols ATTRIBUTE_UNUSED,
++			    asection *section,
++			    bfd_vma offset,
++			    const char **file,
++			    const char **func,
++			    unsigned int *line,
++			    unsigned int *discriminator)
+ {
+   struct module *module;
+ 
+@@ -4588,6 +4592,8 @@ _bfd_vms_find_nearest_dst_line (bfd *abfd, asection *section,
+   *file = NULL;
+   *func = NULL;
+   *line = 0;
++  if (discriminator)
++    *discriminator = 0;
+ 
+   /* We can't do anything if there is no DST (debug symbol table).  */
+   if (PRIV (dst_section) == NULL)
+@@ -4607,26 +4613,6 @@ _bfd_vms_find_nearest_dst_line (bfd *abfd, asection *section,
+ 
+   return FALSE;
+ }
+-
+-/* Likewise but with a discriminator.  */
+-
+-static bfd_boolean
+-_bfd_vms_find_nearest_line_discriminator (bfd *abfd,
+-					  asection *section,
+-					  asymbol **symbols,
+-					  bfd_vma offset,
+-					  const char **filename_ptr,
+-					  const char **functionname_ptr,
+-					  unsigned int *line_ptr,
+-					  unsigned int *discriminator)
+-{
+-  *discriminator = 0;
+-
+-  return _bfd_vms_find_nearest_dst_line (abfd, section, symbols, offset,
+-					 filename_ptr, functionname_ptr,
+-					 line_ptr);
+-}
+-
+ 
+ /* Canonicalizations.  */
+ /* Set name, value, section and flags of SYM from E.  */
+@@ -9207,9 +9193,8 @@ bfd_vms_get_data (bfd *abfd)
+ #define alpha_vms_get_lineno               _bfd_nosymbols_get_lineno
+ #define alpha_vms_find_inliner_info        _bfd_nosymbols_find_inliner_info
+ #define alpha_vms_bfd_make_debug_symbol    _bfd_nosymbols_bfd_make_debug_symbol
+-#define alpha_vms_find_nearest_line        _bfd_vms_find_nearest_dst_line
+-#define _bfd_generic_find_nearest_line_discriminator \
+-  _bfd_vms_find_nearest_line_discriminator
++#define alpha_vms_find_nearest_line        _bfd_vms_find_nearest_line
++#define alpha_vms_find_line                _bfd_nosymbols_find_line
+ #define alpha_vms_bfd_is_local_label_name  vms_bfd_is_local_label_name
+ 
+ /* Generic table.  */
+--- a/bfd/xsym.c
++++ b/bfd/xsym.c
+@@ -33,6 +33,7 @@
+ #define bfd_sym_bfd_is_target_special_symbol       ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
+ #define bfd_sym_get_lineno                          _bfd_nosymbols_get_lineno
+ #define bfd_sym_find_nearest_line                   _bfd_nosymbols_find_nearest_line
++#define bfd_sym_find_line                           _bfd_nosymbols_find_line
+ #define bfd_sym_find_inliner_info                   _bfd_nosymbols_find_inliner_info
+ #define bfd_sym_bfd_make_debug_symbol               _bfd_nosymbols_bfd_make_debug_symbol
+ #define bfd_sym_read_minisymbols                    _bfd_generic_read_minisymbols

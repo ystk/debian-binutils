@@ -1,0 +1,18 @@
+# DP: Fix build configured with --enable-targets=aarch64-linux.
+
+gold/
+
+2014-10-18  Andreas Schwab  <schwab@linux-m68k.org>
+
+	* configure.tgt (targ_extra_obj) [aarch64*-*]: Define.
+
+--- a/gold/configure.tgt
++++ b/gold/configure.tgt
+@@ -146,6 +146,7 @@ arm*-*-*)
+  ;;
+ aarch64*-*)
+  targ_obj=aarch64
++ targ_extra_obj=aarch64-reloc-property
+  targ_machine=EM_AARCH64
+  targ_size=64
+  targ_extra_size=32

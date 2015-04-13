@@ -1,0 +1,22 @@
+# DP: gas: Recognize: AAarch64 ThunderX processor.
+
+--- a/gas/config/tc-aarch64.c
++++ b/gas/config/tc-aarch64.c
+@@ -7186,6 +7186,7 @@
+ 				 AARCH64_FEATURE_CRC), "Cortex-A53"},
+   {"cortex-a57", AARCH64_FEATURE(AARCH64_ARCH_V8,
+ 				 AARCH64_FEATURE_CRC), "Cortex-A57"},
++  {"thunderx",		AARCH64_ARCH_V8, "Cavium ThunderX"},
+   /* The 'xgene-1' name is an older name for 'xgene1', which was used
+      in earlier releases and is superseded by 'xgene1' in all
+      tools.  */
+--- a/gas/doc/c-aarch64.texi
++++ b/gas/doc/c-aarch64.texi
+@@ -57,6 +57,7 @@
+ on the target processor.  The following processor names are recognized:
+ @code{cortex-a53},
+ @code{cortex-a57},
++@code{thunderx},
+ @code{xgene1},
+ and
+ @code{xgene2}.
