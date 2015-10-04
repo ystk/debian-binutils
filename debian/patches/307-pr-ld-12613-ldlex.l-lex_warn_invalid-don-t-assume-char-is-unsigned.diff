@@ -1,0 +1,24 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 307-pr-ld-12613-ldlex.l-lex_warn_invalid-don-t-assume-char-is-unsigned.diff by Alan Modra <amodra@gmail.com>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: From: Alan Modra <amodra@gmail.com>
+## DP: Date: Tue, 29 Mar 2011 02:52:36 +0000
+## DP: Subject: PR ld/12613 	* ldlex.l (lex_warn_invalid): Don't assume char is unsigned.
+## DP: Origin: https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=commitdiff;h=c3a7b1206d72edcfeb965fdbd6cfd0c9d0100eba
+## DP: 
+## DP: [bwh: Backported to squeeze: drop ChangeLog changes]
+
+@DPATCH@
+
+--- a/ld/ldlex.l
++++ b/ld/ldlex.l
+@@ -689,7 +689,7 @@ lex_warn_invalid (char *where, char *what)
+ 
+   if (! ISPRINT (*what))
+     {
+-      sprintf (buf, "\\%03o", (unsigned int) *what);
++      sprintf (buf, "\\%03o", *(unsigned char *) what);
+       what = buf;
+     }
+ 

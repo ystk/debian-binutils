@@ -1,0 +1,79 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 306-fix-stack-buffer-overflows-when-parsing-corrupt-ihex-files.diff by "Yuriy M. Kaminskiy" <yumkam@gmail.com>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: From: "Yuriy M. Kaminskiy" <yumkam@gmail.com>
+## DP: Date: Tue, 4 Aug 2015 16:51:53 +0100
+## DP: Subject: Fix stack buffer overflows when parsing corrupt ihex files.
+## DP: Origin: https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=commitdiff;h=7e27a9d5f22f9f7ead11738b1546d0b5c737266b
+## DP: 
+## DP: 	PR binutils/18750
+## DP: 	* ihex.c (ihex_scan): Fixes incorrect escape sequence in error message
+## DP: 	and stack overflow when char is signed and \200-\376 was in place of hex
+## DP: 	digit; also fixes \377 was handled as EOF instead of "incorrect character".
+## DP: 	(ihex_read_section): Changed for consistency.
+## DP: 	(ihex_bad_byte): Prevent (now impossible to trigger) stack
+## DP: 	overflow and incorrect escape sequence handling.
+## DP: 	* srec.c (srec_bad_byte): Likewise.
+## DP: 
+## DP: 	* readelf.c (process_mips_specific): Fix incorrect escape
+## DP: 	sequence handling.
+## DP: 
+## DP: [bwh: Backported to squeeze:
+## DP:  - Drop ChangeLog changes
+## DP:  - process_mips_specific() in readelf doesn't use a temporary
+## DP:    variable or ISPRINT() but does still need a similar change]
+
+@DPATCH@
+
+--- a/bfd/ihex.c
++++ b/bfd/ihex.c
+@@ -219,7 +219,7 @@ ihex_bad_byte (bfd *abfd, unsigned int lineno, int c, bfd_boolean error)
+       char buf[10];
+ 
+       if (! ISPRINT (c))
+-	sprintf (buf, "\\%03o", (unsigned int) c);
++	sprintf (buf, "\\%03o", (unsigned int) c & 0xff);
+       else
+ 	{
+ 	  buf[0] = c;
+@@ -276,7 +276,7 @@ ihex_scan (bfd *abfd)
+       else
+ 	{
+ 	  file_ptr pos;
+-	  char hdr[8];
++	  unsigned char hdr[8];
+ 	  unsigned int i;
+ 	  unsigned int len;
+ 	  bfd_vma addr;
+@@ -553,7 +553,7 @@ ihex_read_section (bfd *abfd, asection *section, bfd_byte *contents)
+   error = FALSE;
+   while ((c = ihex_get_byte (abfd, &error)) != EOF)
+     {
+-      char hdr[8];
++      unsigned char hdr[8];
+       unsigned int len;
+       unsigned int type;
+       unsigned int i;
+--- a/bfd/srec.c
++++ b/bfd/srec.c
+@@ -249,7 +249,7 @@ srec_bad_byte (bfd *abfd,
+       char buf[40];
+ 
+       if (! ISPRINT (c))
+-	sprintf (buf, "\\%03o", (unsigned int) c);
++	sprintf (buf, "\\%03o", (unsigned int) c & 0xff);
+       else
+ 	{
+ 	  buf[0] = c;
+--- a/binutils/readelf.c
++++ b/binutils/readelf.c
+@@ -14467,7 +14467,7 @@ process_mips_specific (FILE * file)
+ 		    && ((char *) option)[len] < 0x7f)
+ 		  printf ("%c", ((char *) option)[len++]);
+ 		else
+-		  printf ("\\%03o", ((char *) option)[len++]);
++		  printf ("\\%03o", ((unsigned char *) option)[len++]);
+ 
+ 	      fputs ("\n", stdout);
+ 	      ++option;

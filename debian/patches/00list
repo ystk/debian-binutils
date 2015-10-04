@@ -50,3 +50,6 @@
 303-CVE-2014-8503_8502_8737-part4.diff
 304-CVE-2014-8504.diff
 305-CVE-2014-8738.diff
+306-fix-stack-buffer-overflows-when-parsing-corrupt-ihex-files.diff
+307-pr-ld-12613-ldlex.l-lex_warn_invalid-don-t-assume-char-is-unsigned.diff
+308-CVE-2012-3509.diff

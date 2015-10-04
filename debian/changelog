@@ -1,3 +1,12 @@
+binutils (2.20.1-16+deb6u2) squeeze-lts; urgency=medium
+
+  * Non-maintainer upload by the Squeeze LTS team
+  * Fix stack buffer overflows when parsing corrupt ihex files
+  * Fix stack buffer overflow when parsing possible linker script
+  * Fix integer overflow in objalloc_alloc (CVE-2012-3509)
+
+ -- Ben Hutchings <ben@decadent.org.uk>  Fri, 02 Oct 2015 00:27:02 +0100
+
 binutils (2.20.1-16+deb6u1) squeeze-lts; urgency=high
 
   * Non-maintainer upload by the Squeeze LTS Team. 
