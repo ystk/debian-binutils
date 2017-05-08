@@ -1,0 +1,47 @@
+commit 3b0357dadaf2366cc418ec725dec55b1cea1a2e7
+Author: Andreas Schwab <schwab@suse.de>
+Date:   Thu Oct 1 12:30:18 2015 +0200
+
+    gold: fix ABI pagesize for aarch64
+    
+    * aarch64.cc (aarch64_info): Set abi_pagesize to 64K.
+
+diff a/gold/aarch64.cc b/gold/aarch64.cc
+--- a/gold/aarch64.cc	2017-01-12 10:43:43.948866937 +0000
++++ b/gold/aarch64.cc	2017-01-12 10:44:21.913133322 +0000
+@@ -2232,7 +2232,7 @@
+   '\0',			// wrap_char
+   "/lib/ld.so.1",	// program interpreter
+   0x400000,		// default_text_segment_address
+-  0x1000,		// abi_pagesize (overridable by -z max-page-size)
++  0x10000,		// abi_pagesize (overridable by -z max-page-size)
+   0x1000,		// common_pagesize (overridable by -z common-page-size)
+   false,                // isolate_execinstr
+   0,                    // rosegment_gap
+@@ -2259,7 +2259,7 @@
+   '\0',			// wrap_char
+   "/lib/ld.so.1",	// program interpreter
+   0x400000,		// default_text_segment_address
+-  0x1000,		// abi_pagesize (overridable by -z max-page-size)
++  0x10000,		// abi_pagesize (overridable by -z max-page-size)
+   0x1000,		// common_pagesize (overridable by -z common-page-size)
+   false,                // isolate_execinstr
+   0,                    // rosegment_gap
+@@ -2286,7 +2286,7 @@
+   '\0',			// wrap_char
+   "/lib/ld.so.1",	// program interpreter
+   0x400000,		// default_text_segment_address
+-  0x1000,		// abi_pagesize (overridable by -z max-page-size)
++  0x10000,		// abi_pagesize (overridable by -z max-page-size)
+   0x1000,		// common_pagesize (overridable by -z common-page-size)
+   false,                // isolate_execinstr
+   0,                    // rosegment_gap
+@@ -2313,7 +2313,7 @@
+   '\0',			// wrap_char
+   "/lib/ld.so.1",	// program interpreter
+   0x400000,		// default_text_segment_address
+-  0x1000,		// abi_pagesize (overridable by -z max-page-size)
++  0x10000,		// abi_pagesize (overridable by -z max-page-size)
+   0x1000,		// common_pagesize (overridable by -z common-page-size)
+   false,                // isolate_execinstr
+   0,                    // rosegment_gap

@@ -1,3 +1,10 @@
+binutils (2.25-5+deb8u1) stable; urgency=medium
+
+  * Apply patch from upstream to fix gold on arm64. The ABI specifies
+    using a pagesize of 64k for ELF binaries. Closes: #850814
+
+ -- Steve McIntyre <93sam@debian.org>  Thu, 12 Jan 2017 10:36:22 +0000
+
 binutils (2.25-5) unstable; urgency=medium
 
   * Remove '*.rej' files in the source package. Closes: #775679.

@@ -44,3 +44,4 @@ pr17531-6.diff
 #pr17531-9.diff
 
 x86_64-pie-relocs.patch
+gold_arm64_pagesize.patch
