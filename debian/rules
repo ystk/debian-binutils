@@ -940,7 +940,7 @@ endif # ifndef BACKPORT
 	$(install_dir) $(d_src)/DEBIAN
 	$(install_dir) $(d_src)/$(PF)/src/binutils/patches
 	$(install_file) debian/patches/* $(d_src)/$(PF)/src/binutils/patches/
-	cd .. && find $(sources_files) -depth -newermt '$(BUILD_DATE)' -print0 | \
+	cd .. && find $(source_files) -depth -newermt '$(BUILD_DATE)' -print0 | \
 		xargs -0r touch --no-dereference --date='$(BUILD_DATE)' && \
 		find $(source_files) -type f -print0 | LC_ALL=C sort -z | tar --null -T - -c --xz --exclude=CVS \
 		-f $(pwd)/$(d_src)/$(PF)/src/binutils/binutils-$(VERSION).tar.xz \

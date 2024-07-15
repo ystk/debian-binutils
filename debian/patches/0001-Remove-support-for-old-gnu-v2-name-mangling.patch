@@ -1,0 +1,131 @@
+From ee1d9b01b3b5eb691a87283799453f65f4d02d31 Mon Sep 17 00:00:00 2001
+From: Nick Clifton <nickc@redhat.com>
+Date: Tue, 8 Jan 2019 16:53:02 +0000
+Subject: Remove support for old gnu v2 name mangling.
+
+	PR 24044
+	* cxxfilt.c (hp_symbol_characters): Delete.
+	(main): Remove depcreated demangling styles.
+	* stabs.c (parse_stab_argtypes): Remove support for old gnu v2
+	demangling opnames.
+	* testsuite/binutils-all/cxxfilt.exp: Use the
+	--no-strip-underscore option for targets that do prefix their
+	symbols with underscores.
+	Update tests to elimiate those that use gnu v2 encoding.
+---
+ binutils/cxxfilt.c | 50 ++++------------------------------------------
+ binutils/stabs.c   | 26 +++++++-----------------
+ 2 files changed, 11 insertions(+), 65 deletions(-)
+
+diff --git a/binutils/cxxfilt.c b/binutils/cxxfilt.c
+index 157ebe02d52..a370c999095 100644
+--- a/binutils/cxxfilt.c
++++ b/binutils/cxxfilt.c
+@@ -129,42 +129,6 @@ standard_symbol_characters (void)
+   return "_$.";
+ }
+ 
+-/* Return the string of non-alnum characters that may occur
+-   as a valid symbol name component in an HP object file.
+-
+-   Note that, since HP's compiler generates object code straight from
+-   C++ source, without going through an assembler, its mangled
+-   identifiers can use all sorts of characters that no assembler would
+-   tolerate, so the alphabet this function creates is a little odd.
+-   Here are some sample mangled identifiers offered by HP:
+-
+-	typeid*__XT24AddressIndExpClassMember_
+-	[Vftptr]key:__dt__32OrdinaryCompareIndExpClassMemberFv
+-	__ct__Q2_9Elf64_Dyn18{unnamed.union.#1}Fv
+-
+-   This still seems really weird to me, since nowhere else in this
+-   file is there anything to recognize curly brackets, parens, etc.
+-   I've talked with Srikanth <srikanth@cup.hp.com>, and he assures me
+-   this is right, but I still strongly suspect that there's a
+-   misunderstanding here.
+-
+-   If we decide it's better for c++filt to use HP's assembler syntax
+-   to scrape identifiers out of its input, here's the definition of
+-   the symbol name syntax from the HP assembler manual:
+-
+-       Symbols are composed of uppercase and lowercase letters, decimal
+-       digits, dollar symbol, period (.), ampersand (&), pound sign(#) and
+-       underscore (_). A symbol can begin with a letter, digit underscore or
+-       dollar sign. If a symbol begins with a digit, it must contain a
+-       non-digit character.
+-
+-   So have fun.  */
+-static const char *
+-hp_symbol_characters (void)
+-{
+-  return "_$.<>#,*&[]:(){}";
+-}
+-
+ extern int main (int, char **);
+ 
+ int
+@@ -232,18 +196,12 @@ main (int argc, char **argv)
+ 
+   switch (current_demangling_style)
+     {
+-    case gnu_demangling:
+-    case lucid_demangling:
+-    case arm_demangling:
++    case auto_demangling:
++    case gnu_v3_demangling:
+     case java_demangling:
+-    case edg_demangling:
+     case gnat_demangling:
+-    case gnu_v3_demangling:
+-    case auto_demangling:
+-      valid_symbols = standard_symbol_characters ();
+-      break;
+-    case hp_demangling:
+-      valid_symbols = hp_symbol_characters ();
++    case dlang_demangling:
++       valid_symbols = standard_symbol_characters ();
+       break;
+     default:
+       /* Folks should explicitly indicate the appropriate alphabet for
+diff --git a/binutils/stabs.c b/binutils/stabs.c
+index 33159e997a2..bac1376cc52 100644
+--- a/binutils/stabs.c
++++ b/binutils/stabs.c
+@@ -2918,27 +2918,15 @@ parse_stab_argtypes (void *dhandle, struct stab_handle *info,
+ 	  && fieldname[1] == 'p'
+ 	  && (fieldname[2] == '$' || fieldname[2] == '.'))
+ 	{
+-	  const char *opname;
+-
+-	  opname = cplus_mangle_opname (fieldname + 3, 0);
+-	  if (opname == NULL)
+-	    {
+-	      fprintf (stderr, _("No mangling for \"%s\"\n"), fieldname);
+-	      return DEBUG_TYPE_NULL;
+-	    }
+-	  mangled_name_len += strlen (opname);
+-	  physname = (char *) xmalloc (mangled_name_len);
+-	  strncpy (physname, fieldname, 3);
+-	  strcpy (physname + 3, opname);
++	  /* Opname selection is no longer supported by libiberty's demangler.  */
++	  return DEBUG_TYPE_NULL;
+ 	}
++
++      physname = (char *) xmalloc (mangled_name_len);
++      if (is_constructor)
++	physname[0] = '\0';
+       else
+-	{
+-	  physname = (char *) xmalloc (mangled_name_len);
+-	  if (is_constructor)
+-	    physname[0] = '\0';
+-	  else
+-	    strcpy (physname, fieldname);
+-	}
++	strcpy (physname, fieldname);
+ 
+       physname_len = strlen (physname);
+       strcat (physname, buf);
+-- 
+2.30.2
+

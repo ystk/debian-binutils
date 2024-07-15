@@ -45,3 +45,7 @@ pr17531-6.diff
 
 x86_64-pie-relocs.patch
 gold_arm64_pagesize.patch
+
+0001-Remove-support-for-old-gnu-v2-name-mangling.patch
+0002-Sync-libiberty-sources-with-gcc-master-versions.patch
+0003-PR23994-libbfd-integer-overflow.patch
